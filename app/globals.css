@@ -1,1 +1,13 @@
 @import 'tailwindcss';
+
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
+}
+
+@layer components {
+  .container {
+    @apply mx-auto px-4;
+  }
+}
