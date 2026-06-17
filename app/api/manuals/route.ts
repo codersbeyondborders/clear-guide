@@ -1,104 +1,155 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+import { auth } from '@/lib/auth'
+import { query } from '@/lib/db'
+import type { ManualListItem } from '@/lib/types'
 
-// In-memory database for manuals
-let manualsDb = [
+// ---------------------------------------------------------------------------
+// Mock data — used when DB env vars are not configured
+// ---------------------------------------------------------------------------
+const MOCK_MANUALS: ManualListItem[] = [
   {
-    id: "demo-qr-123",
-    productName: "Smart Coffee Maker X1",
-    manufacturer: "BrewTech",
-    status: "Published",
-    lastUpdated: new Date().toISOString(),
-    sections: [
-      {
-        id: "s1",
-        title: "Getting Started",
-        content: "Welcome to your new Smart Coffee Maker. Before first use, please wash all removable parts with warm soapy water.",
-        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-        audioDescription: "A person is shown washing the water reservoir and filter basket in a sink with warm, soapy water."
-      },
-      {
-        id: "s2",
-        title: "Brewing Coffee",
-        content: "1. Add coffee grounds to the filter.\n2.Fill the reservoir with fresh water.\n3. Press the 'Brew' button.",
-        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-        audioDescription: "The water reservoir is filled to the max line. Two scoops of coffee are added to the filter. The brew button on the front panel is pressed, and it lights up."
-      },
-      {
-        id: "s3",
-        title: "Cleaning & Maintenance",
-        content: "Descale the machine every 3 months. Wipe the exterior with a damp cloth.",
-        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-        audioDescription: "A damp cloth is used to wipe the stainless steel exterior of the coffee maker."
-      }
-    ]
+    id: 'demo-qr-123',
+    productName: 'Smart Coffee Maker X1',
+    productModel: 'CX-1000',
+    brand: 'BrewTech',
+    status: 'published',
+    languages: ['en', 'fr', 'de'],
+    coverImage: null,
+    sectionCount: 3,
+    createdAt: new Date(Date.now() - 86_400_000 * 10).toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
-    id: "demo-qr-456",
-    productName: "Smart Toaster Pro",
-    manufacturer: "BrewTech",
-    status: "Draft",
-    lastUpdated: new Date(Date.now() - 86400000 * 2).toISOString(),
-    sections: [
-      {
-        id: "t1",
-        title: "Initial Setup",
-        content: "Place the toaster on a flat, heat-resistant surface. Plug it into a grounded outlet.",
-        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-        audioDescription: "The toaster is placed on a granite countertop and plugged into a standard wall outlet."
-      },
-      {
-        id: "t2",
-        title: "Toasting Bread",
-        content: "Insert bread into the slots. Select your desired browning level using the dial (1-6). Press the lever down to start.",
-        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-        audioDescription: "Two slices of bread are inserted. The dial is turned to level 3, and the side lever is pushed down until it clicks."
-      }
-    ]
+    id: 'demo-qr-456',
+    productName: 'Smart Toaster Pro',
+    productModel: 'TP-200',
+    brand: 'BrewTech',
+    status: 'draft',
+    languages: ['en'],
+    coverImage: null,
+    sectionCount: 2,
+    createdAt: new Date(Date.now() - 86_400_000 * 5).toISOString(),
+    updatedAt: new Date(Date.now() - 86_400_000 * 2).toISOString(),
   },
   {
-    id: "demo-qr-789",
-    productName: "SonicBuds Wireless Earbuds",
-    manufacturer: "AudioSync",
-    status: "Published",
-    lastUpdated: new Date(Date.now() - 86400000 * 5).toISOString(),
-    sections: [
-      {
-        id: "e1",
-        title: "Pairing with your Device",
-        content: "1. Open the charging case lid.\n2. Go to Bluetooth settings on your device.\n3. Select 'SonicBuds' from the list of available devices.",
-        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-        audioDescription: "The charging case is opened, revealing the earbuds. A smartphone screen shows the Bluetooth menu where 'SonicBuds' is tapped and connected."
-      },
-      {
-        id: "e2",
-        title: "Touch Controls",
-        content: "Single tap: Play/Pause\nDouble tap right: Next track\nDouble tap left: Previous track\nLong press: Activate voice assistant",
-        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-        audioDescription: "A person taps the right earbud once to pause music, then double-taps it to skip to the next song."
-      },
-      {
-        id: "e3",
-        title: "Charging",
-        content: "Place the earbuds back into the case. The LED indicator will pulse white while charging and turn solid white when fully charged.",
-        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-        audioDescription: "Earbuds are placed into the magnetic slots of the case. A small LED on the front of the case begins to slowly pulse white."
-      }
-    ]
-  }
-];
+    id: 'demo-qr-789',
+    productName: 'SonicBuds Wireless Earbuds',
+    productModel: 'SB-Pro',
+    brand: 'AudioSync',
+    status: 'published',
+    languages: ['en', 'es', 'ja', 'ko'],
+    coverImage: null,
+    sectionCount: 3,
+    createdAt: new Date(Date.now() - 86_400_000 * 20).toISOString(),
+    updatedAt: new Date(Date.now() - 86_400_000 * 5).toISOString(),
+  },
+]
 
+const DB_READY = !!(process.env.PGHOST && process.env.AWS_ROLE_ARN)
+
+// ---------------------------------------------------------------------------
+// GET /api/manuals
+// ---------------------------------------------------------------------------
 export async function GET(request: Request) {
-  return NextResponse.json(manualsDb);
+  if (!DB_READY) {
+    return NextResponse.json(MOCK_MANUALS)
+  }
+
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+
+    const baseSQL = `
+      SELECT
+        m.id, m.product_name AS "productName", m.product_model AS "productModel",
+        m.brand, m.status, m.languages, m.thumbnail_url AS "coverImage",
+        m.created_at AS "createdAt", m.updated_at AS "updatedAt",
+        COUNT(s.id)::int AS "sectionCount"
+      FROM manuals m
+      LEFT JOIN manual_sections s ON s.manual_id = m.id
+      WHERE m."userId" = $1
+        AND m.deleted_at IS NULL
+        ${status && status !== 'all' ? 'AND m.status = $2' : ''}
+      GROUP BY m.id
+      ORDER BY m.updated_at DESC
+      LIMIT 100
+    `
+
+    const params = status && status !== 'all'
+      ? [session.user.id, status]
+      : [session.user.id]
+
+    const result = await query(baseSQL, params)
+    return NextResponse.json(result.rows)
+  } catch (err) {
+    console.error('[v0] GET /api/manuals error:', err)
+    return NextResponse.json({ error: 'Failed to fetch manuals' }, { status: 500 })
+  }
 }
 
+// ---------------------------------------------------------------------------
+// POST /api/manuals
+// ---------------------------------------------------------------------------
 export async function POST(request: Request) {
-  const body = await request.json();
-  const newManual = {
-    ...body,
-    id: `manual-${Date.now()}`,
-    lastUpdated: new Date().toISOString(),
-    status: "Draft"
-  };
-  manualsDb.push(newManual);
-  return NextResponse.json(newManual, { status: 201 });
+  if (!DB_READY) {
+    const body = await request.json()
+    const newManual: ManualListItem = {
+      id: `manual-${Date.now()}`,
+      productName: body.productName ?? 'New Manual',
+      productModel: body.productModel ?? null,
+      brand: body.brand ?? null,
+      status: 'draft',
+      languages: body.languages ?? ['en'],
+      coverImage: null,
+      sectionCount: body.sections?.length ?? 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    return NextResponse.json(newManual, { status: 201 })
+  }
+
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { productName, productModel, brand, serialNumber, languages, status, uploadMethod, originalFileUrl } = body
+
+    if (!productName || !productModel || !brand) {
+      return NextResponse.json({ error: 'productName, productModel, and brand are required' }, { status: 400 })
+    }
+
+    const result = await query(
+      `INSERT INTO manuals
+         ("userId", product_name, product_model, brand, serial_number, status, languages, upload_method, original_file_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, product_name AS "productName", product_model AS "productModel",
+         brand, status, languages, thumbnail_url AS "coverImage",
+         created_at AS "createdAt", updated_at AS "updatedAt"`,
+      [
+        session.user.id,
+        productName,
+        productModel,
+        brand,
+        serialNumber ?? null,
+        status ?? 'draft',
+        languages ?? ['en'],
+        uploadMethod ?? null,
+        originalFileUrl ?? null,
+      ],
+    )
+
+    return NextResponse.json({ ...result.rows[0], sectionCount: 0 }, { status: 201 })
+  } catch (err) {
+    console.error('[v0] POST /api/manuals error:', err)
+    return NextResponse.json({ error: 'Failed to create manual' }, { status: 500 })
+  }
 }
