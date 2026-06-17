@@ -218,26 +218,51 @@ export function SectionBuilder({ sections, onChange }: SectionBuilderProps) {
 // File Upload Drop Zone
 // ---------------------------------------------------------------------------
 interface FileUploadProps {
-  onFile: (name: string, size: number) => void
+  onFile: (name: string, size: number, pathname?: string) => void
   currentFileName: string | null
   onClear: () => void
+  manualId?: string
 }
 
-export function FileUpload({ onFile, currentFileName, onClear }: FileUploadProps) {
+export function FileUpload({ onFile, currentFileName, onClear, manualId = 'new' }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     if (!['application/pdf', 'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
-      alert('Only PDF and Word documents are accepted.')
+      setUploadError('Only PDF and Word documents are accepted.')
       return
     }
     if (file.size > 50 * 1024 * 1024) {
-      alert('File size must be under 50 MB.')
+      setUploadError('File size must be under 50 MB.')
       return
     }
-    onFile(file.name, file.size)
+    setUploadError(null)
+    setUploading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('manualId', manualId)
+      formData.append('type', 'manual')
+
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error((err as { error?: string }).error ?? 'Upload failed')
+      }
+
+      const data = await res.json() as { pathname?: string }
+      onFile(file.name, file.size, data.pathname)
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const formatSize = (bytes: number) => {
@@ -271,51 +296,69 @@ export function FileUpload({ onFile, currentFileName, onClear }: FileUploadProps
   }
 
   return (
-    <div
-      onDragEnter={(e) => { e.preventDefault(); setDragging(true) }}
-      onDragLeave={() => setDragging(false)}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault()
-        setDragging(false)
-        const file = e.dataTransfer.files[0]
-        if (file) handleFile(file)
-      }}
-      onClick={() => inputRef.current?.click()}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click() }}
-      aria-label="Upload PDF or Word document, max 50 MB"
-      className="flex flex-col items-center justify-center gap-3 py-12 px-6 rounded-xl border-2 border-dashed cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      style={{
-        borderColor: dragging ? 'var(--color-primary)' : 'var(--color-border-strong)',
-        backgroundColor: dragging ? 'var(--color-primary-subtle)' : 'var(--color-background-subtle)',
-      }}
-    >
-      <Upload
-        className="w-8 h-8"
-        style={{ color: dragging ? 'var(--color-primary)' : 'var(--color-muted-foreground)' }}
-        aria-hidden="true"
-      />
-      <div className="text-center">
-        <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
-          Drop your file here, or <span style={{ color: 'var(--color-primary)' }}>browse</span>
-        </p>
-        <p className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
-          PDF or Word document &mdash; max 50 MB
-        </p>
-      </div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".pdf,.doc,.docx"
-        className="sr-only"
-        tabIndex={-1}
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) handleFile(file)
+    <div className="space-y-2">
+      <div
+        onDragEnter={(e) => { e.preventDefault(); if (!uploading) setDragging(true) }}
+        onDragLeave={() => setDragging(false)}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault()
+          setDragging(false)
+          const file = e.dataTransfer.files[0]
+          if (file && !uploading) handleFile(file)
         }}
-      />
+        onClick={() => { if (!uploading) inputRef.current?.click() }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !uploading) inputRef.current?.click() }}
+        aria-label="Upload PDF or Word document, max 50 MB"
+        aria-busy={uploading}
+        className="flex flex-col items-center justify-center gap-3 py-12 px-6 rounded-xl border-2 border-dashed transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        style={{
+          borderColor: dragging ? 'var(--color-primary)' : uploadError ? 'var(--color-destructive)' : 'var(--color-border-strong)',
+          backgroundColor: dragging ? 'var(--color-primary-subtle)' : 'var(--color-background-subtle)',
+          cursor: uploading ? 'wait' : 'pointer',
+        }}
+      >
+        {uploading ? (
+          <>
+            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }} aria-hidden="true" />
+            <p className="text-sm font-medium" style={{ color: 'var(--color-muted-foreground)' }}>Uploading...</p>
+          </>
+        ) : (
+          <>
+            <Upload
+              className="w-8 h-8"
+              style={{ color: dragging ? 'var(--color-primary)' : 'var(--color-muted-foreground)' }}
+              aria-hidden="true"
+            />
+            <div className="text-center">
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                Drop your file here, or <span style={{ color: 'var(--color-primary)' }}>browse</span>
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                PDF or Word document &mdash; max 50 MB
+              </p>
+            </div>
+          </>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,.doc,.docx"
+          className="sr-only"
+          tabIndex={-1}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) handleFile(file)
+          }}
+        />
+      </div>
+      {uploadError && (
+        <p className="text-xs" role="alert" style={{ color: 'var(--color-destructive)' }}>
+          {uploadError}
+        </p>
+      )}
     </div>
   )
 }
