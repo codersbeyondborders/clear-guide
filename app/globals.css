@@ -1,13 +1,238 @@
 @import 'tailwindcss';
 
-@layer base {
-  html {
-    color-scheme: light dark;
+/* ==========================================================================
+   ClearGuide Design System — Tailwind CSS v4
+   Tokens: 1 accent (emerald), 2 neutrals (slate), semantic states
+   Fonts: Inter (sans) only — one typeface, multiple weights
+   ========================================================================== */
+
+@theme inline {
+  /* Fonts */
+  --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
+
+  /* ---------- Color Tokens ---------- */
+
+  /* Background / Surface */
+  --color-background:       #ffffff;
+  --color-background-subtle:#f8fafc;
+  --color-card:             #ffffff;
+  --color-card-hover:       #f1f5f9;
+
+  /* Foreground / Text */
+  --color-foreground:       #0f172a;
+  --color-muted-foreground: #64748b;
+
+  /* Primary accent — emerald */
+  --color-primary:          #16a34a;
+  --color-primary-hover:    #15803d;
+  --color-primary-foreground: #ffffff;
+  --color-primary-subtle:   #f0fdf4;
+
+  /* Border */
+  --color-border:           #e2e8f0;
+  --color-border-strong:    #cbd5e1;
+
+  /* Semantic states */
+  --color-destructive:      #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-warning:          #d97706;
+  --color-success:          #16a34a;
+  --color-info:             #0284c7;
+
+  /* Focus ring */
+  --color-ring:             #16a34a;
+
+  /* Radius */
+  --radius:                 0.5rem;
+
+  /* ---------- Dark-mode overrides ---------- */
+  @media (prefers-color-scheme: dark) {
+    --color-background:       #0f172a;
+    --color-background-subtle:#1e293b;
+    --color-card:             #1e293b;
+    --color-card-hover:       #273548;
+
+    --color-foreground:       #f1f5f9;
+    --color-muted-foreground: #94a3b8;
+
+    --color-primary:          #22c55e;
+    --color-primary-hover:    #16a34a;
+    --color-primary-foreground: #0f172a;
+    --color-primary-subtle:   #14532d;
+
+    --color-border:           #1e293b;
+    --color-border-strong:    #334155;
+
+    --color-destructive:      #f87171;
+    --color-destructive-foreground: #0f172a;
+    --color-ring:             #22c55e;
   }
 }
 
-@layer components {
-  .container {
-    @apply mx-auto px-4;
+/* ==========================================================================
+   Base resets
+   ========================================================================== */
+@layer base {
+  html {
+    color-scheme: light dark;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Visible focus ring on all interactive elements */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Remove default list styles */
+  ul, ol { list-style: none; margin: 0; padding: 0; }
+
+  /* Smooth image rendering */
+  img, video { max-width: 100%; display: block; }
+
+  /* Heading defaults */
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--color-foreground);
+    font-weight: 700;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  p { text-wrap: pretty; }
+}
+
+/* ==========================================================================
+   Utility classes — shared button, input, badge primitives
+   ========================================================================== */
+@layer components {
+  /* Page container */
+  .container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: var(--radius);
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    border: none;
+    cursor: pointer;
+    transition: background-color 150ms ease, box-shadow 150ms ease;
+    white-space: nowrap;
+  }
+  .btn-primary:hover:not(:disabled) { background-color: var(--color-primary-hover); }
+  .btn-primary:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+
+  /* Outline button */
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: var(--radius);
+    background-color: transparent;
+    color: var(--color-foreground);
+    border: 1px solid var(--color-border-strong);
+    cursor: pointer;
+    transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease;
+    white-space: nowrap;
+  }
+  .btn-outline:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background-color: var(--color-primary-subtle);
+  }
+  .btn-outline:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+
+  /* Ghost button */
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: var(--radius);
+    background-color: transparent;
+    color: var(--color-muted-foreground);
+    border: none;
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--color-background-subtle);
+    color: var(--color-foreground);
+  }
+  .btn-ghost:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+
+  /* Shared input */
+  .auth-input {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    border-radius: var(--radius);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    border: 1px solid var(--color-border-strong);
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+    outline: none;
+  }
+  .auth-input::placeholder { color: var(--color-muted-foreground); }
+  .auth-input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  }
+  .auth-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Card surface */
+  .card {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: calc(var(--radius) * 2);
+  }
+
+  /* Status badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+  }
+  .badge-green  { background: var(--color-primary-subtle); color: var(--color-primary); border-color: color-mix(in srgb, var(--color-primary) 25%, transparent); }
+  .badge-slate  { background: var(--color-background-subtle); color: var(--color-muted-foreground); border-color: var(--color-border); }
+  .badge-red    { background: color-mix(in srgb, var(--color-destructive) 10%, transparent); color: var(--color-destructive); border-color: color-mix(in srgb, var(--color-destructive) 25%, transparent); }
+}
+
+/* ==========================================================================
+   Print styles
+   ========================================================================== */
+@media print {
+  nav, footer, .no-print { display: none !important; }
+  body { background: white; color: black; }
+  a[href]::after { content: ' (' attr(href) ')'; }
 }

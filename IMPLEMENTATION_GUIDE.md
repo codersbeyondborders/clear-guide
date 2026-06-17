@@ -13,63 +13,311 @@
 
 ## Detailed Phase 1: Core Foundation (Weeks 1-2)
 
-### Task 1.1: Database Schema & Neon Setup
+### Task 1.1: Database Schema & AWS Aurora PostgreSQL Setup
 
-**Objective**: Create production-ready PostgreSQL schema using Drizzle ORM.
+**Objective**: Create a production-ready PostgreSQL schema on AWS Aurora PostgreSQL with best practices for performance, scaling, and reliability.
+
+**AWS Infrastructure**:
+- **Engine**: Aurora PostgreSQL 16 (writer + read replica)
+- **Connection Pooling**: RDS Proxy (IAM-authenticated, max_connections managed server-side)
+- **Auth**: IAM token-based authentication (no static passwords)
+- **Encryption**: at-rest (KMS) + in-transit (SSL/TLS enforced)
+- **Driver**: `pg` with `@aws-sdk/rds-signer` for token refresh
+- **ORM**: Drizzle ORM (`drizzle-orm/node-postgres`) over the shared `pg` Pool
+
+**Schema Design Principles**:
+- Primary keys: `uuid` (generated via `gen_random_uuid()`) for distributed-safe IDs
+- All timestamps: `TIMESTAMPTZ` (timezone-aware) stored in UTC
+- Soft deletes: `deleted_at TIMESTAMPTZ` column — never hard-delete rows
+- Composite indexes on every high-cardinality foreign-key + filter column pair
+- `CHECK` constraints on enum-like columns to enforce values at the DB layer
+- Partitioning on `analytics` (by month) and `ai_chat_history` (by month) — both are high-volume append-only tables
+- All text user content columns use `TEXT` (not `VARCHAR(n)`) to avoid silent truncation
 
 **Subtasks**:
-1. Initialize Neon database
-2. Create `drizzle/schema.ts` with all tables:
-   - `users` (id, email, password_hash, created_at, updated_at)
-   - `manuals` (id, manufacturer_id, product_name, product_model, brand, serial_number, status, languages, created_at, updated_at)
-   - `manual_sections` (id, manual_id, section_number, title, content, image_urls, video_urls)
-   - `translations` (id, manual_id, language, translated_content)
-   - `analytics` (id, manual_id, user_session_id, mode, time_spent_seconds, viewed_at)
-   - `ai_chat_history` (id, manual_id, user_session_id, role, message)
-3. Run migrations: `drizzle-kit migrate`
-4. Create migration files for version control
 
-**Deliverables**: 
-- `drizzle/schema.ts` with all table definitions
-- `drizzle/migrations/` folder with numbered migration files
-- `.env.local` with `DATABASE_URL` set
+1. **Provision Aurora cluster** via AWS Console or Terraform:
+   - Create Aurora PostgreSQL 16 cluster in a VPC
+   - Enable Multi-AZ (writer + 1 read replica minimum)
+   - Enable RDS Proxy (IAM auth) — gives connection pooling without managing pgBouncer
+   - Enable Enhanced Monitoring + Performance Insights
+   - Store connection string as `DATABASE_URL` in Vercel environment variables
+
+2. **Create `lib/db/index.ts`** — Drizzle client over `pg` Pool with IAM token refresh:
+   ```typescript
+   import { Pool } from 'pg'
+   import { drizzle } from 'drizzle-orm/node-postgres'
+   import { Signer } from '@aws-sdk/rds-signer'
+   import * as schema from './schema'
+
+   const signer = new Signer({
+     hostname: process.env.DB_HOST!,
+     port: 5432,
+     region: process.env.AWS_REGION!,
+     username: process.env.DB_USER!,
+   })
+
+   export const pool = new Pool({
+     host: process.env.DB_HOST,
+     port: 5432,
+     user: process.env.DB_USER,
+     database: process.env.DB_NAME,
+     ssl: { rejectUnauthorized: true },
+     password: () => signer.getAuthToken(), // rotates every 15 min automatically
+   })
+
+   export const db = drizzle(pool, { schema })
+   ```
+
+3. **Create `lib/db/schema.ts`** with all tables (see full schema below)
+
+4. **Run DDL** via a one-time `node scripts/migrate.ts` script (using the pool directly — no drizzle-kit push in production):
+   ```bash
+   npx tsx scripts/migrate.ts
+   ```
+
+5. **Seed demo data** (`scripts/seed.ts`):
+   - Demo manufacturer user
+   - 2–3 sample manuals with sections
+
+**Full Table Schema** (`lib/db/schema.ts`):
+
+```typescript
+import {
+  pgTable, uuid, text, boolean, integer, real,
+  timestamp, jsonb, index, uniqueIndex, check, pgEnum
+} from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+
+// ─── Enums (enforced at DB layer) ────────────────────────────────────────────
+
+export const manualStatusEnum = pgEnum('manual_status', ['draft', 'processing', 'published', 'archived'])
+export const uploadMethodEnum = pgEnum('upload_method', ['upload', 'sections'])
+export const chatRoleEnum     = pgEnum('chat_role',     ['user', 'assistant'])
+export const viewModeEnum     = pgEnum('view_mode',     ['text', 'infographic', 'video', 'chat'])
+
+// ─── Better Auth Core Tables ─────────────────────────────────────────────────
+
+export const user = pgTable('user', {
+  id:            text('id').primaryKey(),
+  name:          text('name').notNull(),
+  email:         text('email').notNull().unique(),
+  emailVerified: boolean('emailVerified').notNull().default(false),
+  image:         text('image'),
+  createdAt:     timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:     timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const session = pgTable('session', {
+  id:         text('id').primaryKey(),
+  expiresAt:  timestamp('expiresAt',  { withTimezone: true }).notNull(),
+  token:      text('token').notNull().unique(),
+  createdAt:  timestamp('createdAt',  { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:  timestamp('updatedAt',  { withTimezone: true }).notNull().defaultNow(),
+  ipAddress:  text('ipAddress'),
+  userAgent:  text('userAgent'),
+  userId:     text('userId').notNull().references(() => user.id, { onDelete: 'cascade' }),
+}, (t) => [
+  index('session_user_id_idx').on(t.userId),
+  index('session_expires_at_idx').on(t.expiresAt),
+])
+
+export const account = pgTable('account', {
+  id:                   text('id').primaryKey(),
+  accountId:            text('accountId').notNull(),
+  providerId:           text('providerId').notNull(),
+  userId:               text('userId').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  accessToken:          text('accessToken'),
+  refreshToken:         text('refreshToken'),
+  idToken:              text('idToken'),
+  accessTokenExpiresAt: timestamp('accessTokenExpiresAt', { withTimezone: true }),
+  refreshTokenExpiresAt:timestamp('refreshTokenExpiresAt',{ withTimezone: true }),
+  scope:                text('scope'),
+  password:             text('password'),
+  createdAt:            timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:            timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index('account_user_id_idx').on(t.userId),
+  uniqueIndex('account_provider_account_idx').on(t.providerId, t.accountId),
+])
+
+export const verification = pgTable('verification', {
+  id:         text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value:      text('value').notNull(),
+  expiresAt:  timestamp('expiresAt',  { withTimezone: true }).notNull(),
+  createdAt:  timestamp('createdAt',  { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:  timestamp('updatedAt',  { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index('verification_identifier_idx').on(t.identifier),
+])
+
+// ─── App Tables ───────────────────────────────────────────────────────────────
+
+export const manuals = pgTable('manuals', {
+  id:             uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId:         text('userId').notNull(),                     // scoped to auth user; no FK for schema flexibility
+  productName:    text('product_name').notNull(),
+  productModel:   text('product_model').notNull(),
+  brand:          text('brand').notNull(),
+  serialNumber:   text('serial_number'),
+  status:         manualStatusEnum('status').notNull().default('draft'),
+  languages:      text('languages').array().notNull().default(sql`ARRAY['en']::text[]`),
+  uploadMethod:   uploadMethodEnum('upload_method'),
+  originalFileUrl:text('original_file_url'),
+  thumbnailUrl:   text('thumbnail_url'),
+  createdAt:      timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:      timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt:      timestamp('deleted_at', { withTimezone: true }),           // soft delete
+}, (t) => [
+  index('manuals_user_status_idx').on(t.userId, t.status),                  // dashboard list query
+  index('manuals_user_created_idx').on(t.userId, t.createdAt.desc()),       // date-sorted list
+  index('manuals_deleted_at_idx').on(t.deletedAt),                          // filter active rows fast
+  index('manuals_status_idx').on(t.status),                                 // admin/public filtered views
+])
+
+export const manualSections = pgTable('manual_sections', {
+  id:            uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  manualId:      uuid('manual_id').notNull(),                               // no FK: section bulk inserts are faster without FK checks
+  sectionNumber: integer('section_number').notNull(),
+  title:         text('title').notNull(),
+  content:       text('content').notNull().default(''),
+  imageUrls:     text('image_urls').array().notNull().default(sql`ARRAY[]::text[]`),
+  videoUrls:     text('video_urls').array().notNull().default(sql`ARRAY[]::text[]`),
+  createdAt:     timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:     timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index('sections_manual_order_idx').on(t.manualId, t.sectionNumber),      // ordered section fetch
+  uniqueIndex('sections_manual_number_uidx').on(t.manualId, t.sectionNumber),
+])
+
+export const translations = pgTable('translations', {
+  id:                uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  manualId:          uuid('manual_id').notNull(),
+  sectionId:         uuid('section_id'),                                    // null = full-manual translation
+  language:          text('language').notNull(),                            // BCP-47 code e.g. "fr", "de"
+  translatedContent: text('translated_content').notNull(),
+  generatedAt:       timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex('translations_manual_section_lang_uidx').on(t.manualId, t.sectionId, t.language),
+  index('translations_manual_lang_idx').on(t.manualId, t.language),
+])
+
+// Partitioned by month via application-level routing (Aurora doesn't support declarative partitioning
+// the same way as vanilla PG; use native partitioning if on Aurora PG 14+).
+// Recommended: CREATE TABLE analytics_YYYY_MM PARTITION OF analytics ...
+// The schema below defines the parent; migration script adds monthly partitions.
+export const analytics = pgTable('analytics', {
+  id:             uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  manualId:       uuid('manual_id').notNull(),
+  userId:         text('user_id'),                                          // null for anonymous users
+  userSessionId:  text('user_session_id').notNull(),
+  mode:           viewModeEnum('mode').notNull(),
+  timeSpentSeconds: integer('time_spent_seconds').notNull().default(0),
+  viewedAt:       timestamp('viewed_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index('analytics_manual_viewed_idx').on(t.manualId, t.viewedAt.desc()), // per-manual time-series
+  index('analytics_viewed_at_idx').on(t.viewedAt.desc()),                 // global time-series + partition pruning
+  index('analytics_session_idx').on(t.userSessionId),
+])
+
+// Same monthly-partition strategy recommended for ai_chat_history.
+export const aiChatHistory = pgTable('ai_chat_history', {
+  id:            uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  manualId:      uuid('manual_id').notNull(),
+  userId:        text('user_id'),
+  userSessionId: text('user_session_id').notNull(),
+  role:          chatRoleEnum('role').notNull(),
+  message:       text('message').notNull(),
+  tokenCount:    integer('token_count'),                                    // for AI cost tracking
+  createdAt:     timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index('chat_manual_session_idx').on(t.manualId, t.userSessionId, t.createdAt.asc()), // chat thread fetch
+  index('chat_created_at_idx').on(t.createdAt.desc()),                    // partition pruning
+])
+
+// Manual knowledge base — derived from AI-processed content, used as RAG context.
+export const manualKnowledgeBase = pgTable('manual_knowledge_base', {
+  id:        uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  manualId:  uuid('manual_id').notNull().unique(),
+  chunks:    jsonb('chunks').notNull().default(sql`'[]'::jsonb`),          // [{text, sectionId, embedding_id}]
+  modelVersion: text('model_version').notNull(),                           // track which AI model built it
+  builtAt:   timestamp('built_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index('kb_manual_idx').on(t.manualId),
+])
+```
+
+**Required Environment Variables**:
+```
+DATABASE_URL=          # Full connection string (for Better Auth pg Pool)
+DB_HOST=               # Aurora cluster / RDS Proxy endpoint
+DB_USER=               # IAM DB user
+DB_NAME=               # Database name
+AWS_REGION=            # e.g. us-east-1
+AWS_ACCESS_KEY_ID=     # IAM credentials (or use instance role / Lambda role)
+AWS_SECRET_ACCESS_KEY= # IAM credentials
+BETTER_AUTH_SECRET=    # openssl rand -base64 32
+```
+
+**Key Indexes Summary**:
+
+| Table | Index | Query it enables |
+|---|---|---|
+| `manuals` | `(userId, status)` | Dashboard filtered list |
+| `manuals` | `(userId, created_at DESC)` | Date-sorted list |
+| `manual_sections` | `(manual_id, section_number)` | Ordered section fetch |
+| `translations` | `(manual_id, language)` | All sections in a language |
+| `analytics` | `(manual_id, viewed_at DESC)` | Per-manual chart data |
+| `ai_chat_history` | `(manual_id, session_id, created_at ASC)` | Chat thread |
+
+**Deliverables**:
+- `lib/db/index.ts` — Drizzle + pg Pool with IAM token refresh
+- `lib/db/schema.ts` — all table definitions with indexes
+- `scripts/migrate.ts` — DDL runner
+- `scripts/seed.ts` — demo data
 
 **Acceptance Criteria**:
-- All tables created successfully
-- Relationships (foreign keys) configured
-- Indexes on frequently queried columns (manufacturer_id, status)
-- Able to connect from app code via ORM
+- All tables + indexes created on Aurora cluster
+- IAM auth connection works end-to-end
+- RDS Proxy handles connection pooling (no pool exhaustion under load)
+- Demo seed data queryable
 
 ---
 
 ### Task 1.2: Better Auth Integration
 
-**Objective**: Set up email/password authentication with session management.
+**Objective**: Set up email/password authentication with session management backed by Aurora PostgreSQL.
 
 **Subtasks**:
-1. Install Better Auth: `pnpm add better-auth`
+1. Install: `pnpm add better-auth pg @aws-sdk/rds-signer drizzle-orm`
 2. Create `lib/auth.ts`:
+   - Use the **same `pg` Pool** as Drizzle (one connection pool)
    - Configure email/password strategy
-   - Set session duration (30 days)
-   - Configure cookie settings (secure, httpOnly, sameSite)
-3. Create auth middleware in `middleware.ts`:
-   - Protect manufacturer routes (/manufacturer/*)
-   - Allow public routes (/, /user, /manual/:id, /manufacturer/login)
-4. Create `app/api/auth/[...]/route.ts` for auth endpoints
-5. Create client-side auth hook: `hooks/useAuth.ts`
-6. Add logout functionality
+   - Session duration: 30 days
+   - Dev-mode cookie override for `sameSite: "none"` (required for preview iframes)
+   - `trustedOrigins` cascade: `BETTER_AUTH_URL` → `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → `V0_RUNTIME_URL`
+3. Create `lib/auth-client.ts` (React client)
+4. Create `app/api/auth/[...all]/route.ts` (catch-all handler — `[...all]` is required)
+5. Create `middleware.ts`:
+   - Protect `/manufacturer/*` routes
+   - Allow public routes (`/`, `/user`, `/manual/:id`, `/manufacturer/login`)
+6. Create `app/sign-in/page.tsx` and `app/sign-up/page.tsx` (server components that redirect authed users)
+7. Create `components/auth-form.tsx` (shared client form)
+8. Create `hooks/useAuth.ts` client hook
 
 **Deliverables**:
-- `lib/auth.ts` with Better Auth config
-- `middleware.ts` with route protection
-- `app/api/auth/[...]/route.ts` API endpoints
-- `hooks/useAuth.ts` React hook
+- `lib/auth.ts`
+- `lib/auth-client.ts`
+- `middleware.ts`
+- `app/api/auth/[...all]/route.ts`
+- `hooks/useAuth.ts`
 
 **Acceptance Criteria**:
-- Signup/login/logout working
+- Signup/login/logout working against Aurora
 - Sessions persist across page refreshes
 - Protected routes redirect to login
-- Demo credentials work (demo@brewtech.com / password123)
+- Demo credentials work (`demo@brewtech.com` / `password123`)
 
 ---
 
@@ -79,12 +327,12 @@
 
 **Subtasks**:
 1. Define color tokens in `globals.css`:
-   - Primary: Emerald (#16a34a)
+   - Primary: Emerald (`#16a34a`)
    - Neutrals: Gray scale (50–950)
    - Semantic: success, error, warning, info
-   - Accessibility: high-contrast black (#000) and yellow (#FFFF00)
+   - Accessibility: high-contrast black (`#000`) and yellow (`#FFFF00`)
 2. Configure typography:
-   - Font family: Inter for body, headings
+   - Font family: Inter for body + headings
    - Scale: sm (12px), base (16px), lg (18px), xl (24px), 2xl (32px)
    - Line height: 1.5–1.6 for readability
 3. Set up component variants:
@@ -99,13 +347,12 @@
 **Deliverables**:
 - `app/globals.css` with all design tokens
 - `tailwind.config.ts` with custom configuration
-- `postcss.config.js` with Tailwind plugin
 
 **Acceptance Criteria**:
 - Color variables accessible in all components
 - Focus ring visible on Tab navigation
 - High-contrast mode applies correctly
-- Responsive scales work (sm:, md:, lg:)
+- Responsive scales work (`sm:`, `md:`, `lg:`)
 
 ---
 
@@ -136,13 +383,11 @@
 
 **Deliverables**:
 - All components in `components/ui/` with TypeScript
-- Storybook setup (optional, for development)
-- Usage examples in code comments
 
 **Acceptance Criteria**:
 - All components render without errors
 - Props interface clear and typed
-- Accessibility props present (aria-label, role, aria-describedby)
+- Accessibility props present (`aria-label`, `role`, `aria-describedby`)
 - Keyboard navigation working for interactive elements
 
 ---
@@ -154,8 +399,8 @@
 **Sections**:
 1. **Header/Navigation**
    - Logo
-   - Links: "Find a Guide" (→ /user), "Dashboard" (→ /manufacturer/dashboard if logged in, else /manufacturer/login)
-   - "Get Started" CTA button (→ /manufacturer/login)
+   - Links: "Find a Guide" (→ `/user`), "Dashboard" (→ `/manufacturer/dashboard` if logged in, else `/manufacturer/login`)
+   - "Get Started" CTA button (→ `/manufacturer/login`)
    - Auth status (if logged in, show user email + logout button)
 
 2. **Hero Section**
@@ -242,7 +487,7 @@
 - Submit button (shows loading spinner during request)
 - "Forgot password?" link (placeholder)
 - Demo credentials hint box:
-  - Shows: demo@brewtech.com / password123
+  - Shows: `demo@brewtech.com` / `password123`
   - Clicking email or password auto-fills the form
 
 **Flow**:
@@ -253,7 +498,6 @@
 
 **Deliverables**:
 - `app/manufacturer/login/page.tsx`
-- `app/api/auth/sign-in/route.ts` (if not handled by Better Auth)
 - Form validation logic
 
 **Acceptance Criteria**:
@@ -293,12 +537,13 @@
 **Card Actions**:
 - **Edit** → navigate to `/manufacturer/edit/:id`
 - **Analytics** → navigate to `/manufacturer/analytics/:id`
-- **Delete** → show confirmation modal, then soft-delete from DB
+- **Delete** → show confirmation modal, then set `deleted_at` (soft delete)
 
 **Data Fetching**:
 - Fetch user's manuals via SWR: `GET /api/manuals?status=all`
 - Auto-refresh every 30s
 - Show loading skeleton while fetching
+- Query scoped by `userId` (no RLS — all queries must filter by session user)
 
 **Deliverables**:
 - `app/manufacturer/dashboard/page.tsx`
@@ -411,24 +656,11 @@
 - "Cancel" link (go back to dashboard)
 
 **On Save**:
-1. Send POST to `/api/manuals` with form data
-2. Show AI Processing overlay:
-   - Step 1: Parsing document structure... [spinner]
-   - Step 2: Extracting sections and headings... [spinner]
-   - Step 3: Generating accessibility metadata... [spinner]
-   - Step 4: Building AI knowledge base... [spinner]
-   - Step 5: Optimizing for multimodal delivery... [spinner]
-   - Step 6: Finalizing and publishing... [spinner]
+1. Send `POST` to `/api/manuals` with form data
+2. Show AI Processing overlay (6 animated steps)
 3. Progress bar at top (0–100%)
 4. On complete: Show "Manual Ready!" success message
 5. After 2s: Redirect to `/manufacturer/dashboard`
-
-**AI Processing** (handled by backend API):
-- Extract sections from uploaded file (using Google Genai API)
-- Generate alt text for images
-- Generate captions for videos
-- Create translation layer for 16 languages
-- Build AI knowledge base from manual content
 
 **Deliverables**:
 - `app/manufacturer/new/_components/Step4.tsx`
@@ -452,7 +684,7 @@
 - Reuse editor steps from `/manufacturer/new`
 - On page load: fetch existing manual data via `GET /api/manuals/:id`
 - Pre-populate form with existing data
-- On save: PUT to `/api/manuals/:id` instead of POST
+- On save: `PUT` to `/api/manuals/:id` instead of POST
 - Same AI Processing overlay on save
 
 **Deliverables**:
@@ -468,40 +700,28 @@
 **Components**:
 1. **Header**: Manual name + back link
 2. **KPI Cards** (grid, responsive):
-   - Total Views (large number)
+   - Total Views
    - Active Users (30 days)
    - Average Time Spent (in minutes)
-   - Each card shows trend (↑ +12% from last month)
+   - Trend vs. last month (↑ +12%)
 
 3. **Charts**:
-   - **Views Over Time** (line chart):
-     - X-axis: dates (last 7 days)
-     - Y-axis: views
-     - Emerald line
-     - Hover tooltip shows exact count and date
-   - **Top AI Support Queries** (horizontal bar chart):
-     - Y-axis: query text (truncated if long)
-     - X-axis: count
-     - Top 5 queries
+   - **Views Over Time** (line chart, Recharts)
+   - **Top AI Support Queries** (horizontal bar chart, Recharts)
 
-4. **Download**: "Export as CSV" button (optional enhancement)
+4. **Download**: "Export as CSV" button (optional)
 
 **Data Fetching**:
-- GET `/api/manuals/:id/analytics` → returns KPI + chart data
+- `GET /api/manuals/:id/analytics` → KPI + chart data from `analytics` table
+- Aurora read replica used for analytics queries (read-heavy, can tolerate slight lag)
 - SWR hook for auto-refresh
 
 **Deliverables**:
 - `app/manufacturer/analytics/[id]/page.tsx`
 - `app/api/manuals/[id]/analytics/route.ts`
 - `components/KPICard.tsx`
-- `components/LineChart.tsx` (using Recharts)
-- `components/BarChart.tsx` (using Recharts)
-
-**Acceptance Criteria**:
-- KPI cards display with correct numbers
-- Charts render with data
-- Responsive on mobile/tablet/desktop
-- Hover tooltips work on charts
+- `components/LineChart.tsx` (Recharts)
+- `components/BarChart.tsx` (Recharts)
 
 ---
 
@@ -509,301 +729,88 @@
 
 ### Task 3.1: End User Portal (`/user`)
 
-**Objective**: Entry point for end users to search for manuals.
-
 **Sections**:
 1. **Header**: "Find Your Guide"
 2. **QR Code Demo**:
    - Large QR code image (static, linked to demo manual)
-   - Below: "Simulate QR Scan" button
-   - Button action: navigate to `/manual/demo-qr-123`
-
-3. **Divider**: Horizontal line
-
-4. **Search Form**:
-   - "Or search manually:"
-   - Make dropdown (manufacturer names, searchable)
-   - Model text input
-   - Serial Number text input
-   - Search button (disabled until all 3 filled)
-   - On submit: navigate to `/manual/:id` with matching manual
+   - "Simulate QR Scan" button → navigate to `/manual/demo-qr-123`
+3. **Search Form**:
+   - Make dropdown, Model input, Serial Number input
+   - On submit: navigate to `/manual/:id`
 
 **Deliverables**:
 - `app/user/page.tsx`
 - `components/QRCodeDisplay.tsx`
 - `components/ManualSearchForm.tsx`
 
-**Acceptance Criteria**:
-- QR image displays
-- "Simulate QR Scan" navigates to demo manual
-- Search form validation works
-- Search submits and loads manual
-
 ---
 
 ### Task 3.2: Manual Welcome Screen (`/manual/:id`)
 
-**Objective**: Landing screen before viewing manual content.
-
 **Layout**:
-- Centered card with:
-  - Badge: "Product Manual"
-  - Product name (h1)
-  - Manufacturer name
-  - Language picker (16 languages, flags)
-
-- **Mode Selection** (4 cards below):
-  1. **Text with Images**: "Step-by-step text with inline images"
-  2. **Infographic**: "Full-screen visual overview"
-  3. **Video**: "Guided video walkthroughs"
-  4. **AI Chat**: "Ask questions, get instant answers"
-
-- **Download Button** (below cards):
-  - Dropdown: PDF / DOCX
-  - On select: trigger download
-
-**State**:
-- Clicking a mode → navigate to `/manual/:id?mode=text|infographic|video|chat`
-- Language picker → stay on welcome screen, update selected language state
+- Centered card: badge, product name, manufacturer, language picker
+- Mode Selection (4 cards): Text with Images, Infographic, Video, AI Chat
+- Download button (PDF / DOCX dropdown)
 
 **Deliverables**:
-- `app/manual/[id]/page.tsx` (welcome screen)
+- `app/manual/[id]/page.tsx`
 - `components/ModeSelector.tsx`
-- `components/LanguagePicker.tsx` (reused, adjusted)
 
 ---
 
 ### Task 3.3: Text with Images Mode
 
-**Objective**: Side-by-side text and images reading experience.
-
 **Layout**:
-- **Desktop** (md+): Sidebar (left, 250px) + Content (right, flex-1)
-- **Mobile**: Hamburger menu → offcanvas sidebar
-
-**Sidebar**:
-- Section list (all sections clickable)
-- Active section highlighted (emerald background)
-- Section titles truncated if long
-- Collapse/expand on mobile
-
-**Content Area**:
-- Section title (h2)
-- Section image (max 45vh height, responsive width, object-cover)
-- Section text (justified, line-height 1.6)
-- Previous / Next section buttons at bottom
-- Font size controls (A−/A+): 12px–32px
-- TTS toggle in header
+- Desktop: Sidebar (250px) + Content (flex-1)
+- Mobile: Hamburger → offcanvas sidebar
 
 **Header Controls**:
-- Language picker
-- TTS toggle
-- Font size (A−/A+)
-- Contrast (toggle)
-- Download button
-
-**TTS Implementation**:
-- Use Web Speech API (`SpeechSynthesisUtterance`)
-- Play button in header when on text mode
-- Icon changes (speaker icon → muted icon)
-- Stop button when playing
-- Auto-speak when toggled on
+- Language picker, TTS toggle, Font size (A−/A+), Contrast toggle, Download
 
 **Deliverables**:
-- `app/manual/[id]/layout.tsx` (wrapper with header controls)
 - `app/manual/[id]/text/page.tsx`
 - `components/ManualSidebar.tsx`
 - `components/AccessibilityControls.tsx`
-- `hooks/useTTS.ts` (TTS logic)
-- `hooks/useFontSize.ts` (font size state)
-
-**Acceptance Criteria**:
-- Sidebar displays all sections
-- Clicking section updates content
-- Images display correctly
-- Text is readable with adjustable font size
-- TTS plays audio correctly
-- Previous/Next navigation works
+- `hooks/useTTS.ts`
 
 ---
 
 ### Task 3.4: Infographic Mode
 
-**Objective**: Full-screen immersive infographic viewing.
-
-**Layout**:
-- Slim title bar: "Product name" + "Visual product overview"
-- Full infographic image below (object-contain, fills available height)
-- No sidebar (immersive)
-- Responsive: scales on mobile, tablet, desktop
-
-**Controls**:
-- Header controls still visible:
-  - Language picker
-  - Font size (A−/A+) — affects title/labels only
-  - Contrast (toggle)
-  - Download button
-
-**Image Optimization**:
-- Large image, lazy load with blur placeholder
-- Responsive srcset for different screen sizes
-
 **Deliverables**:
 - `app/manual/[id]/infographic/page.tsx`
-- Image optimization in layout
-
-**Acceptance Criteria**:
-- Infographic displays fullscreen
-- Scales responsive on all devices
-- No horizontal scrolling needed
 
 ---
 
 ### Task 3.5: Video Mode
-
-**Objective**: Video-based guide with section navigation.
-
-**Layout**:
-- **Desktop**: Video player (left, flex-1) + Section thumbnails (right, 200px, scrollable)
-- **Mobile**: Video player (full width) + Section thumbnails (horizontal scroll below)
-
-**Video Player**:
-- HTML5 `<video>` element or use Vercel Blob optimized player
-- Controls: play, pause, volume, fullscreen, progress bar
-- Autoplay on section switch
-- Audio description transcript below player (in emerald callout)
-
-**Section Thumbnails**:
-- Each thumbnail shows:
-  - Video frame preview image
-  - Section title
-  - Play icon overlay (triangle)
-  - Click to switch main player to that video
-- Active thumbnail: emerald border + ▶ badge
-
-**Responsive**:
-- Desktop: side-by-side layout
-- Mobile: stacked with horizontal scroll for thumbnails
 
 **Deliverables**:
 - `app/manual/[id]/video/page.tsx`
 - `components/VideoPlayer.tsx`
 - `components/SectionThumbnails.tsx`
 
-**Acceptance Criteria**:
-- Video plays correctly
-- Clicking thumbnail switches video
-- Audio description displays
-- Responsive layout works on mobile/desktop
-- Autoplay on mode entry
-
 ---
 
 ### Task 3.6: AI Chat Mode
-
-**Objective**: Interactive Q&A with AI, voice input/output support.
-
-**Layout**:
-- Chat header:
-  - AI assistant name ("ClearGuide Assistant")
-  - Live status ("Ready", "Listening…", "Processing…")
-  - Audio toggle (🔊/🔇)
-- Chat message list (scrollable):
-  - User messages (right-aligned, blue bubble)
-  - AI messages (left-aligned, gray bubble)
-  - Typing animation while AI responds
-- Input bar:
-  - Mic button (left): toggles red while listening
-  - Text input (middle): placeholder "Ask a question…"
-  - Send button (right)
-- During voice recording: "Listening — tap mic to stop" pill in message list
-
-**Voice Implementation**:
-- **Voice Input**: Web Speech API (`webkitSpeechRecognition` with fallback)
-  - Mic button pressed → start recording
-  - Mic button pressed again or auto-stop after silence → stop recording and submit
-  - Red color while listening, normal color when idle
-- **Voice Output**: Web Speech API (`SpeechSynthesisUtterance`)
-  - If audio toggle ON → speak AI response aloud
-  - Respect audio toggle state
-
-**Chat Logic**:
-- User submits (text or voice) → POST to `/api/chat`
-- AI response streams back (use streaming if supported)
-- Show typing animation while waiting
-- Append AI message to chat
-- If audio ON → speak response
-
-**Session Persistence**:
-- Store chat history in localStorage per manual_id
-- Persist across page refreshes
-- (Optional: sync to DB for analytics)
 
 **Deliverables**:
 - `app/manual/[id]/chat/page.tsx`
 - `components/ChatContainer.tsx`
 - `components/ChatMessage.tsx`
 - `components/ChatInput.tsx`
-- `app/api/chat/route.ts` (POST endpoint)
-- `hooks/useVoiceInput.ts` (Web Speech API wrapper)
-- `hooks/useTTS.ts` (already created, reuse)
-
-**Acceptance Criteria**:
-- Chat messages display correctly
-- Voice input works (mic button records and stops)
-- Voice output plays if audio toggle ON
-- Text input submits and displays in chat
-- AI responses appear with typing animation
-- Chat persists on page reload
+- `app/api/chat/route.ts`
+- `hooks/useVoiceInput.ts`
 
 ---
 
 ### Task 3.7: Accessibility Controls (Header, all modes)
 
-**Objective**: Persistent header with accessibility options.
-
-**Controls** (all modes):
-1. **Language Picker**: 16 languages (flags + names)
-   - Current language highlighted
-   - On select: reload manual in that language
-   - Banner appears: "Showing AI-translated content in 🇫🇷 French"
-   - "Switch to English" quick link
-
-2. **TTS Toggle** (text mode only):
-   - Speaker icon
-   - Click: toggle text-to-speech on/off
-
-3. **Font Size** (A−/A+):
-   - Decrease: 12px
-   - Current: 16px–32px (configurable)
-   - Increase: 32px
-
-4. **Contrast Toggle**:
-   - Toggle between normal and high-contrast (black/yellow)
-   - High-contrast: entire UI inverted (background black, text yellow, borders/accents yellow)
-
-5. **Download**:
-   - Button with dropdown: PDF / DOCX
-   - On select: fetch/generate and download
-
-**Implementation**:
-- Context or localStorage to persist accessibility preferences across modes
-- Apply font size via CSS custom property: `--font-size`
-- Apply contrast via class: `high-contrast` on `<html>`
+**Controls**: Language Picker, TTS Toggle, Font Size (A−/A+), Contrast Toggle, Download
 
 **Deliverables**:
 - `components/AccessibilityControls.tsx`
-- Context: `AccessibilityContext.ts`
-- Hooks: `useAccessibility.ts`
-- Styles for high-contrast mode in `globals.css`
-
-**Acceptance Criteria**:
-- Language picker works, banner shows on switch
-- TTS toggle works (text mode)
-- Font size controls adjust text size
-- Contrast toggle inverts UI correctly
-- Preferences persist across modes and refreshes
-- Download generates file
+- `context/AccessibilityContext.ts`
+- `hooks/useAccessibility.ts`
 
 ---
 
@@ -814,76 +821,28 @@
 **Objective**: Google Genai API for document parsing, translation, chat.
 
 **Endpoints**:
-1. **POST `/api/manuals`**: On save, call AI to:
-   - Parse PDF/document structure (extract sections)
-   - Generate alt text for images
-   - Create captions for videos
-   - Build knowledge base from manual content
-   - Translate to 16 languages
-
-2. **POST `/api/chat`**: User message → AI context (manual knowledge base) → AI response
-
-**Implementation**:
-```typescript
-// lib/ai.ts
-import { generateText } from '@ai-sdk/genai';
-
-export async function parseManualContent(file: File) {
-  // Extract text, structure, images, videos
-}
-
-export async function translateContent(text: string, language: string) {
-  // Translate text to target language
-}
-
-export async function answerQuestion(question: string, manualContext: string) {
-  // Answer based on manual knowledge
-}
-```
-
-**Error Handling**:
-- Rate limiting: show user message "Please try again later"
-- API errors: log and return user-friendly error
-- Fallback: pre-written responses if API unavailable
+1. `POST /api/manuals`: On save, call AI to parse + translate + build knowledge base
+2. `POST /api/chat`: User message → `manual_knowledge_base` context → AI response (streamed)
 
 **Deliverables**:
-- `lib/ai.ts` with AI functions
-- API endpoints (`/api/manuals`, `/api/chat`) with AI calls
+- `lib/ai.ts`
+- API endpoints with AI integration
 
 ---
 
 ### Task 4.2: File Storage via Vercel Blob
 
-**Objective**: Store PDF, images, videos securely.
-
-**Implementation**:
-```typescript
-// lib/blob.ts
-import { put } from '@vercel/blob';
-
-export async function uploadFile(file: File, folder: string) {
-  const blob = await put(`${folder}/${file.name}`, file, {
-    access: 'public', // or 'private' depending on use case
-  });
-  return blob.url;
-}
-```
-
-**Use Cases**:
-- Uploaded PDFs for manuals
-- Section images
-- Section videos
-- Downloaded exports (PDF/DOCX)
+**Objective**: Store PDFs, images, videos securely via Vercel Blob. Store returned URLs in Aurora.
 
 **Deliverables**:
-- `lib/blob.ts` with upload/download functions
-- Integration in manual editor (file uploads)
+- `lib/blob.ts`
+- Integration in manual editor
 
 ---
 
-### Task 4.3: Email Notifications (Optional, Phase 2)
+### Task 4.3: Email Notifications (Optional)
 
-**Skip for Phase 1**; implement later if needed.
+**Skip for Phase 1**.
 
 ---
 
@@ -891,39 +850,23 @@ export async function uploadFile(file: File, folder: string) {
 
 ### Task 5.1: Performance Optimization
 
-**Target Metrics**:
-- LCP: < 2.5s
-- FCP: < 1.5s
-- CLS: < 0.1
-- INP: < 200ms
+**Target Metrics**: LCP < 2.5s, FCP < 1.5s, CLS < 0.1, INP < 200ms
 
-**Optimizations**:
-1. **Image Optimization**:
-   - Use `next/image` for all images
-   - Generate WebP and srcset for responsive sizing
-   - Lazy load below-the-fold images
+**Database Optimizations**:
+- All indexes already defined in schema (see Task 1.1)
+- Use Aurora **read replica** endpoint for analytics queries (set `DB_READ_HOST` env var)
+- Use RDS Proxy for connection pooling — eliminates Lambda/serverless connection storm
+- Paginate all list queries (`LIMIT 20 OFFSET n` or keyset pagination using `created_at < cursor`)
+- Use `SELECT` only needed columns — never `SELECT *` in application code
 
-2. **Code Splitting**:
-   - Dynamic imports for heavy components (charts, video player)
-   - Route-based code splitting (already done by Next.js)
-
-3. **Caching**:
-   - ISR for manual pages (revalidate every 1 hour)
-   - SWR for dashboard/analytics (30s stale-while-revalidate)
-   - Browser caching headers for static assets
-
-4. **Database Queries**:
-   - Add indexes on `manufacturer_id`, `status`, `manual_id`
-   - Use selective queries (only fetch needed columns)
-   - Pagination for large lists
-
-5. **Bundle Size**:
-   - Tree-shake unused dependencies
-   - Check bundle size: `next/stats`
+**Application Optimizations**:
+- `next/image` for all images (WebP + srcset)
+- Dynamic imports for heavy components (charts, video player)
+- ISR for manual pages (revalidate 1 hour)
+- SWR with 30s stale-while-revalidate for dashboard/analytics
 
 **Deliverables**:
 - `next.config.ts` with optimization settings
-- Database indexes
 - Performance monitoring setup
 
 ---
@@ -931,87 +874,41 @@ export async function uploadFile(file: File, folder: string) {
 ### Task 5.2: Accessibility Audit (WCAG 2.1 AA)
 
 **Checklist**:
-- [ ] Semantic HTML (header, main, section, article, nav)
+- [ ] Semantic HTML (`header`, `main`, `section`, `article`, `nav`)
 - [ ] ARIA labels on interactive elements
 - [ ] Keyboard navigation (Tab, Enter, Escape, Arrow keys)
-- [ ] Focus indicators visible (outline or ring)
-- [ ] Color contrast > 4.5:1 for text (use axe DevTools)
+- [ ] Focus indicators visible
+- [ ] Color contrast > 4.5:1
 - [ ] High-contrast mode works
-- [ ] Form labels linked to inputs (htmlFor)
-- [ ] Error messages associated (aria-describedby)
-- [ ] Screen reader announcements (aria-live)
+- [ ] Form labels linked to inputs (`htmlFor`)
+- [ ] `aria-live` on dynamic status blocks
 - [ ] Alt text on all images
 - [ ] Video captions and audio descriptions
 - [ ] Mobile touch targets ≥ 44×44px
-
-**Tools**:
-- axe DevTools (browser extension)
-- WAVE (browser extension)
-- Lighthouse (in Chrome DevTools)
-- Manual testing with screen reader (NVDA, JAWS, VoiceOver)
-
-**Deliverables**:
-- Accessibility test report
-- Fixes for any issues found
 
 ---
 
 ### Task 5.3: Responsive Design Testing
 
-**Devices to Test**:
-- Mobile: 375px (iPhone SE), 390px (iPhone 14), 411px (Android)
-- Tablet: 768px (iPad), 820px (iPad Pro)
-- Desktop: 1024px, 1280px, 1920px
-
-**Testing**:
-- [ ] No horizontal scrolling on mobile
-- [ ] Text readable without zoom
-- [ ] Touch targets appropriately sized
-- [ ] Orientation changes (portrait ↔ landscape)
-- [ ] Images scale correctly
-- [ ] Navigation accessible on mobile (hamburger menu works)
-
-**Tools**:
-- Chrome DevTools (device emulation)
-- Physical devices
-- BrowserStack (if needed)
+**Devices**: 375px, 390px, 411px (mobile) / 768px, 820px (tablet) / 1024px, 1280px, 1920px (desktop)
 
 ---
 
 ### Task 5.4: Error Handling & Validation
 
-**Form Validation**:
 - Client-side validation (immediate feedback)
-- Server-side validation (security)
-- Clear error messages per field
-
-**API Error Handling**:
-- 4xx errors: user-friendly toast
-- 5xx errors: generic "Something went wrong" + error ID for support
-
-**Fallback States**:
-- Loading state (skeleton or spinner)
-- Error state (retry button)
-- Empty state (helpful message + CTA)
-
-**Deliverables**:
-- Validation utilities
-- Error boundary components
+- Server-side validation (Zod schemas on all API routes)
+- Loading / error / empty states on all data-dependent UI
 
 ---
 
 ### Task 5.5: Security
 
-**Measures**:
-- CSRF tokens on forms (Better Auth handles)
-- Input sanitization (sanitize-html for user content)
-- SQL injection prevention (ORM parameterizes queries)
-- Rate limiting on API endpoints (optional, via Upstash)
-- Environment variable security (no secrets in client code)
-
-**Deliverables**:
-- Security audit checklist
-- Rate limiting setup (if applicable)
+- CSRF tokens (Better Auth handles)
+- Input sanitization (`sanitize-html` for user content)
+- SQL injection prevention (Drizzle ORM parameterizes all queries)
+- Rate limiting on API endpoints (optional, via Upstash Redis)
+- Secrets only in server-side environment variables
 
 ---
 
@@ -1019,78 +916,56 @@ export async function uploadFile(file: File, folder: string) {
 
 ### Task 6.1: Vercel Deployment
 
-**Setup**:
-1. Connect GitHub repo to Vercel
-2. Configure environment variables:
-   - `DATABASE_URL` (Neon)
-   - `GOOGLE_GENAI_API_KEY` (AI)
-   - `BLOB_READ_WRITE_TOKEN` (Vercel Blob)
-   - Others as needed
-3. Set build command: `pnpm run build`
-4. Set start command: `pnpm start`
-5. Enable Preview Deployments (PRs)
-6. Custom domain configuration
+**Environment Variables to Configure**:
+```
+DATABASE_URL=               # Aurora / RDS Proxy connection string (Better Auth)
+DB_HOST=                    # Aurora writer endpoint (Drizzle IAM auth)
+DB_READ_HOST=               # Aurora reader endpoint (analytics queries)
+DB_USER=                    # IAM database user
+DB_NAME=                    # Database name
+AWS_REGION=                 # e.g. us-east-1
+AWS_ACCESS_KEY_ID=          # IAM key (or use OIDC federation with Vercel)
+AWS_SECRET_ACCESS_KEY=      # IAM secret
+BETTER_AUTH_SECRET=         # Random secret (openssl rand -base64 32)
+GOOGLE_GENAI_API_KEY=       # AI API
+BLOB_READ_WRITE_TOKEN=      # Vercel Blob
+```
 
-**Deliverables**:
-- Vercel project linked
-- All env vars configured
-- Automatic deployments on push
+**IAM Best Practice**: Use **OIDC federation** between Vercel and AWS rather than static IAM keys. This allows Vercel deployments to assume an IAM role without storing long-lived credentials.
+
+**Setup Steps**:
+1. Connect GitHub repo to Vercel
+2. Configure all environment variables above
+3. Set build command: `pnpm run build`
+4. Enable Preview Deployments (PRs)
+5. Custom domain configuration
 
 ---
 
 ### Task 6.2: Monitoring & Analytics
 
-**Error Tracking**:
-- Sentry integration (optional, for error monitoring)
-
-**User Analytics**:
-- PostHog (optional, for engagement metrics)
-
-**Performance Monitoring**:
-- Web Vitals via Vercel Analytics
-- Lighthouse CI (optional)
-
-**Deliverables**:
-- Error tracking dashboard
-- Analytics dashboard
+- **Error Tracking**: Sentry (optional)
+- **User Analytics**: PostHog (optional)
+- **Performance**: Vercel Analytics (Web Vitals)
+- **Database**: RDS Performance Insights + Enhanced Monitoring (AWS Console)
+- **Alerts**: CloudWatch alarms on DB CPU > 80%, connection count > 80% of max
 
 ---
 
 ### Task 6.3: Documentation
 
-**README**:
-- Project overview
-- Tech stack
-- Setup instructions
-- Environment variables
-- Development commands
-
-**API Documentation**:
-- List of endpoints
-- Request/response formats
-- Example requests
-
-**Component Documentation**:
-- Component library overview
-- Usage examples (JSDoc comments)
-
-**Deployment Guide**:
-- Vercel setup steps
-- Environment variables
-- Custom domain setup
-
 **Deliverables**:
-- README.md updated
-- API_DOCS.md
-- DEPLOYMENT.md
+- `README.md` — setup, tech stack, commands
+- `API_DOCS.md` — endpoints, request/response formats
+- `DEPLOYMENT.md` — Vercel + AWS setup steps, env vars, IAM policy
 
 ---
 
 ## Quick Prioritization Guide
 
 **MVP (Must-Have) for Launch**:
-1. Landing page (landing)
-2. Login & authentication
+1. Landing page
+2. Login & authentication (Aurora-backed)
 3. Manufacturer dashboard
 4. Manual editor (basic)
 5. Manual welcome screen
@@ -1107,7 +982,7 @@ export async function uploadFile(file: File, folder: string) {
 **Phase 3 (Future)**:
 - Mobile app (React Native)
 - Multi-user teams
-- Advanced analytics dashboard
+- Aurora Global Database (multi-region reads)
 - Community features
 
 ---
@@ -1120,7 +995,7 @@ export async function uploadFile(file: File, folder: string) {
 - **Mobile**: Perfect responsiveness on 375px–1920px
 - **User Engagement**: >80% mode completion rate
 - **AI Quality**: Translation accuracy >95%, chat relevance >85%
-- **Uptime**: 99.5%+ availability
+- **Uptime**: 99.5%+ availability (Aurora Multi-AZ ensures automatic failover < 30s)
 
 ---
 

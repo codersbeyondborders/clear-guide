@@ -1,48 +1,43 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
-  title: "ClearGuide - Accessible Product Manuals",
-  description: "Create and share accessible product manuals with AI-powered support",
-};
+  title: {
+    default: 'ClearGuide — Accessible AI-Powered Product Manuals',
+    template: '%s — ClearGuide',
+  },
+  description:
+    'Replace paper manuals with accessible, AI-powered digital guides. High-contrast mode, multi-language, QR integration, and instant AI chat support.',
+  keywords: ['product manual', 'accessible manual', 'AI guide', 'manufacturer tool', 'QR manual'],
+  openGraph: {
+    title: 'ClearGuide — Accessible AI-Powered Product Manuals',
+    description: 'Create and share accessible product manuals with AI-powered support.',
+    type: 'website',
+  },
+}
 
-export const viewport = {
-  width: "device-width",
+export const viewport: Viewport = {
+  width: 'device-width',
   initialScale: 1,
-};
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)',  color: '#0f172a' },
+  ],
+}
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="scroll-smooth bg-white dark:bg-slate-950">
-      <head>
-        <style>{`
-          :root {
-            --color-background: 255, 255, 255;
-            --color-foreground: 0, 0, 0;
-            --color-accent: 22, 163, 74;
-            --color-muted: 107, 114, 128;
-          }
-          
-          @media (prefers-color-scheme: dark) {
-            :root {
-              --color-background: 3, 7, 18;
-              --color-foreground: 248, 250, 252;
-              --color-accent: 34, 197, 94;
-              --color-muted: 148, 163, 184;
-            }
-          }
-        `}</style>
-      </head>
-      <body className={`${inter.className} bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50`}>
+    <html lang="en" className={`${inter.variable} scroll-smooth bg-background`}>
+      <body className="font-sans bg-background text-foreground antialiased">
         {children}
       </body>
     </html>
-  );
+  )
 }

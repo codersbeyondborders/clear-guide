@@ -1,26 +1,54 @@
-"use client";
+'use client'
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from 'react'
+import { cn } from '@/lib/utils'
 
-export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {}
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  error?: string
+  label?: string
+  hint?: string
+}
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, error, label, hint, id, ...props }, ref) => {
+    const inputId = id ?? React.useId()
+    const errorId = `${inputId}-error`
+    const hintId  = `${inputId}-hint`
+
     return (
-      <input
-        type={type}
-        className={cn(
-          "flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-gray-900",
-          className
+      <div className="flex flex-col gap-1.5 w-full">
+        {label && (
+          <label htmlFor={inputId} className="text-sm font-medium text-foreground">
+            {label}
+            {props.required && <span className="text-destructive ml-1" aria-hidden="true">*</span>}
+          </label>
         )}
-        ref={ref}
-        {...props}
-      />
+        <input
+          id={inputId}
+          ref={ref}
+          type={type ?? 'text'}
+          aria-invalid={!!error}
+          aria-describedby={cn(error && errorId, hint && hintId) || undefined}
+          className={cn(
+            'flex h-10 w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground',
+            'placeholder:text-muted-foreground',
+            'border-border-strong',
+            'transition-all duration-150',
+            'focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            error && 'border-destructive focus:border-destructive focus:ring-destructive/20',
+            className,
+          )}
+          {...props}
+        />
+        {hint && !error && (
+          <p id={hintId} className="text-xs text-muted-foreground">{hint}</p>
+        )}
+        {error && (
+          <p id={errorId} role="alert" aria-live="polite" className="text-xs text-destructive">{error}</p>
+        )}
+      </div>
     )
-  }
+  },
 )
-Input.displayName = "Input"
-
-export { Input }
+Input.displayName = 'Input'
