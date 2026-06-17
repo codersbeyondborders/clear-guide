@@ -61,22 +61,9 @@ const nextConfig: NextConfig = {
     ]
   },
 
-  // ── Webpack — split heavy charting library into its own chunk ─────────────
-  webpack(config) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const optimization = config.optimization as any
-    if (optimization?.splitChunks) {
-      optimization.splitChunks.cacheGroups = {
-        ...(optimization.splitChunks.cacheGroups ?? {}),
-        recharts: {
-          test: /[\\/]node_modules[\\/]recharts[\\/]/,
-          name: 'recharts',
-          chunks: 'all',
-          priority: 20,
-        },
-      }
-    }
-    return config
+  // ── Turbopack — split heavy charting library into its own chunk ─────────────
+  turbopack: {
+    resolveAlias: {},
   },
 }
 

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 
 // Routes that are always public
 const PUBLIC_ROUTES = ['/', '/sign-in', '/sign-up']
@@ -21,8 +20,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/manufacturer') &&
     !pathname.startsWith('/manufacturer/login')
   ) {
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user) {
+    // Check for Better Auth session cookie
+    const sessionCookie = request.cookies.get('better-auth.session_token')
+    if (!sessionCookie) {
       const loginUrl = new URL('/manufacturer/login', request.url)
       loginUrl.searchParams.set('redirectTo', pathname)
       return NextResponse.redirect(loginUrl)
