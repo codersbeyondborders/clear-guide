@@ -44,7 +44,11 @@ export function AuthForm({ mode, redirectTo = '/manufacturer/dashboard' }: AuthF
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5" aria-label={isSignUp ? 'Create account form' : 'Sign in form'}>
+      {/* Live region for loading/status announcements */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {isLoading ? (isSignUp ? 'Creating your account...' : 'Signing you in...') : ''}
+      </div>
       {isSignUp && (
         <div className="flex flex-col gap-1.5">
           <label htmlFor="name" className="text-sm font-medium text-foreground">
