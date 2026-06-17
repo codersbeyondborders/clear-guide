@@ -10,7 +10,7 @@
   /* Fonts */
   --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
 
-  /* ---------- Color Tokens ---------- */
+  /* ---------- Color Tokens — Light mode ---------- */
 
   /* Background / Surface */
   --color-background:       #ffffff;
@@ -44,9 +44,11 @@
 
   /* Radius */
   --radius:                 0.5rem;
+}
 
-  /* ---------- Dark-mode overrides ---------- */
-  @media (prefers-color-scheme: dark) {
+/* Dark-mode overrides */
+@media (prefers-color-scheme: dark) {
+  :root {
     --color-background:       #0f172a;
     --color-background-subtle:#1e293b;
     --color-card:             #1e293b;
