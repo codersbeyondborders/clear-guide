@@ -177,18 +177,74 @@ export function ChatContainer({ manualId, productName }: ChatContainerProps) {
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: text }
     setMessages(prev => [...prev, userMsg])
     setLoading(true)
+
+    // Build conversation history for context (last 10 turns)
+    const history = messages.slice(-10).map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
+      content: m.content,
+    }))
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, manualId }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify({ message: text, manualId, history }),
       })
-      const data = await res.json()
-      const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'ai', content: data.reply ?? "I'm sorry, I couldn't process that request." }
-      setMessages(prev => [...prev, aiMsg])
+
+      if (!res.ok || !res.body) throw new Error('Bad response')
+
+      const contentType = res.headers.get('content-type') ?? ''
+
+      if (contentType.includes('text/event-stream')) {
+        // SSE streaming path
+        const aiId = (Date.now() + 1).toString()
+        setMessages(prev => [...prev, { id: aiId, role: 'ai', content: '' }])
+        setLoading(false)
+
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            const data = line.slice(6).trim()
+            if (data === '[DONE]') break
+            try {
+              const token = JSON.parse(data) as string
+              setMessages(prev =>
+                prev.map(m => m.id === aiId ? { ...m, content: m.content + token } : m)
+              )
+            } catch { /* skip malformed chunks */ }
+          }
+        }
+      } else {
+        // JSON fallback path
+        const data = await res.json()
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'ai',
+          content: data.reply ?? "I'm sorry, I couldn't process that request.",
+        }
+        setMessages(prev => [...prev, aiMsg])
+        setLoading(false)
+      }
     } catch {
-      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'ai', content: "Sorry, I'm having trouble connecting right now. Please try again." }])
-    } finally {
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'ai',
+        content: "Sorry, I'm having trouble connecting right now. Please try again.",
+      }])
       setLoading(false)
     }
   }

@@ -40,23 +40,68 @@ export function AIChatSupport({ manualId, highContrast = false, audioEnabled = f
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
+
+    const history = messages.slice(-10).map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
+      content: m.content,
+    }))
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, manualId }),
+        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+        body: JSON.stringify({ message: text, manualId, history }),
       });
-      const data = await response.json();
-      const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'ai', content: data.reply };
-      setMessages(prev => [...prev, aiMsg]);
-      if (tts && typeof window !== 'undefined') {
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(new SpeechSynthesisUtterance(data.reply));
+
+      const contentType = response.headers.get('content-type') ?? ''
+
+      if (contentType.includes('text/event-stream') && response.body) {
+        const aiId = (Date.now() + 1).toString()
+        setMessages(prev => [...prev, { id: aiId, role: 'ai', content: '' }])
+        setIsLoading(false)
+
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let fullReply = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            const data = line.slice(6).trim()
+            if (data === '[DONE]') break
+            try {
+              const token = JSON.parse(data) as string
+              fullReply += token
+              setMessages(prev =>
+                prev.map(m => m.id === aiId ? { ...m, content: m.content + token } : m)
+              )
+            } catch { /* skip malformed */ }
+          }
+        }
+
+        if (tts && fullReply && typeof window !== 'undefined') {
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(new SpeechSynthesisUtterance(fullReply));
+        }
+      } else {
+        const data = await response.json();
+        const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'ai', content: data.reply };
+        setMessages(prev => [...prev, aiMsg]);
+        setIsLoading(false)
+        if (tts && typeof window !== 'undefined') {
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(new SpeechSynthesisUtterance(data.reply));
+        }
       }
     } catch {
       setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'ai', content: "Sorry, I'm having trouble connecting right now." }]);
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   };
 

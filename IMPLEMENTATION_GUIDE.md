@@ -818,15 +818,42 @@ BETTER_AUTH_SECRET=    # openssl rand -base64 32
 
 ### Task 4.1: AI Integration
 
-**Objective**: Google Genai API for document parsing, translation, chat.
+**Objective**: AWS Bedrock (Claude 3 Sonnet) for document parsing, translation, chat, and knowledge base construction.
+
+**Model**: `anthropic.claude-3-sonnet-20240229-v1:0` via `@aws-sdk/client-bedrock-runtime`
+**Auth**: Same IAM role as Aurora (`AWS_ROLE_ARN`), scoped with `bedrock:InvokeModel` + `bedrock:InvokeModelWithResponseStream` permissions.
+
+**Architecture**:
+- `lib/ai.ts` — shared Bedrock client with helpers:
+  - `bedrockInvoke(prompt)` — single-turn JSON response (used for parsing, translation)
+  - `bedrockStream(messages)` — streaming `InvokeModelWithResponseStreamCommand` (used for chat)
+  - `parseManualContent(sections)` — extracts structured sections from raw text
+  - `translateContent(content, targetLang)` — translates a single section
+  - `buildKnowledgeBase(sections)` — chunks content + generates knowledge base JSON
+  - `generateChatResponse(messages, context)` — returns an async stream of tokens
 
 **Endpoints**:
-1. `POST /api/manuals`: On save, call AI to parse + translate + build knowledge base
-2. `POST /api/chat`: User message → `manual_knowledge_base` context → AI response (streamed)
+1. `POST /api/manuals`: On save, trigger AI pipeline:
+   - If `uploadMethod === 'upload'` → parse PDF/DOCX content into sections via Bedrock
+   - For each non-English language in `languages[]` → translate all sections via Bedrock
+   - Build `manual_knowledge_base` entry from all section content
+   - Save everything to Aurora in a single transaction
+2. `POST /api/chat`: Streaming RAG chat:
+   - Fetch `manual_knowledge_base.chunks` for the manual
+   - Build a system prompt with the knowledge base context
+   - Call `bedrockStream()` → forward token stream as `text/event-stream`
+
+**Required Environment Variables**:
+```
+AWS_REGION=              # e.g. us-east-1
+AWS_ROLE_ARN=            # IAM role with bedrock:InvokeModel + bedrock:InvokeModelWithResponseStream
+BEDROCK_MODEL_ID=        # anthropic.claude-3-sonnet-20240229-v1:0
+```
 
 **Deliverables**:
-- `lib/ai.ts`
-- API endpoints with AI integration
+- `lib/ai.ts` — Bedrock client + all AI helpers
+- `POST /api/manuals` — AI pipeline integration
+- `POST /api/chat` — streaming Bedrock RAG
 
 ---
 
