@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 import { query, withTransaction } from '@/lib/db'
+import { UpdateManualSchema, parseOrError } from '@/lib/validation'
+import { sanitizeManualInput } from '@/lib/sanitize'
 
 // ---------------------------------------------------------------------------
 // Mock section data — used when DB is not configured
@@ -104,7 +106,19 @@ export async function PUT(
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { productName, productModel, brand, serialNumber, languages, status, sections } = body
+    const parsed = parseOrError(UpdateManualSchema, body)
+    if (!parsed.success) return parsed.response
+
+    const sanitized = sanitizeManualInput({
+      productName: parsed.data.productName ?? '',
+      productModel: parsed.data.productModel ?? '',
+      brand: parsed.data.brand ?? '',
+      serialNumber: parsed.data.serialNumber,
+      sections: parsed.data.sections,
+    })
+
+    const { languages, status } = parsed.data
+    const { productName, productModel, brand, serialNumber, sections } = sanitized
 
     await withTransaction(async (client) => {
       // Update manual

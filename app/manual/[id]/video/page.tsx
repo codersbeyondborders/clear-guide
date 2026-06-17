@@ -3,10 +3,25 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { AccessibilityProvider, useAccessibility } from '@/context/AccessibilityContext'
 import { AccessibilityControls } from '@/components/AccessibilityControls'
-import { VideoPlayer } from '@/components/VideoPlayer'
 import { SectionThumbnails } from '@/components/SectionThumbnails'
+
+// VideoPlayer uses browser-only APIs — load client-side only
+const VideoPlayer = dynamic(
+  () => import('@/components/VideoPlayer').then(m => m.VideoPlayer),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="w-full aspect-video rounded-2xl border animate-pulse"
+        style={{ backgroundColor: 'var(--color-background-subtle)', borderColor: 'var(--color-border)' }}
+        aria-hidden="true"
+      />
+    ),
+  },
+)
 
 interface Section {
   id: string

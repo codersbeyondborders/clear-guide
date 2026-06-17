@@ -1,24 +1,19 @@
-import { headers } from 'next/headers'
 import { query, readQuery } from '@/lib/db'
 import { bedrockStream, buildChatSystemPrompt } from '@/lib/ai'
+import { ChatRequestSchema, parseOrError } from '@/lib/validation'
 import type { KnowledgeChunk } from '@/lib/ai'
 
 // ---------------------------------------------------------------------------
 // POST /api/chat
 //
-// Accepts:
-//   { message: string, manualId: string, history?: { role, content }[] }
-//
-// Returns a text/event-stream of SSE tokens:
-//   data: <token>\n\n
-//   data: [DONE]\n\n
-//
-// Falls back to JSON { reply } if the client doesn't accept streaming.
+// Body: { message, manualId, history?, language? }
+// Returns text/event-stream SSE tokens (data: <token>\n\n, data: [DONE]\n\n)
+// Falls back to JSON { reply } when client does not send Accept: text/event-stream
 // ---------------------------------------------------------------------------
 
 const DB_READY = !!(process.env.PGHOST && process.env.AWS_ROLE_ARN)
 
-// Mock knowledge base used when DB is not configured
+// Mock knowledge base — used when DB is not configured
 const MOCK_KB: Record<string, KnowledgeChunk[]> = {
   'demo-qr-123': [
     { sectionId: 's1', sectionNumber: 1, title: 'Getting Started', text: 'Welcome to your new Smart Coffee Maker. Before first use, wash all removable parts with warm soapy water. Fill the water reservoir to the MAX line and run a brew cycle without coffee to flush the system.' },
@@ -36,20 +31,13 @@ const MOCK_KB: Record<string, KnowledgeChunk[]> = {
   ],
 }
 
-interface ChatRequestBody {
-  message: string
-  manualId: string
-  history?: Array<{ role: 'user' | 'assistant'; content: string }>
-  language?: string
-}
-
 export async function POST(request: Request) {
-  const body = (await request.json()) as ChatRequestBody
-  const { message, manualId, history = [], language = 'en' } = body
+  // ── 0. Validate request body ──────────────────────────────────────────────
+  const rawBody = await request.json()
+  const parsed = parseOrError(ChatRequestSchema, rawBody)
+  if (!parsed.success) return parsed.response
 
-  if (!message?.trim() || !manualId) {
-    return Response.json({ error: 'message and manualId are required' }, { status: 400 })
-  }
+  const { message, manualId, history, language } = parsed.data
 
   // ── 1. Fetch knowledge base ───────────────────────────────────────────────
   let chunks: KnowledgeChunk[] = []
@@ -87,13 +75,13 @@ export async function POST(request: Request) {
   // ── 2. Build system prompt with RAG context ───────────────────────────────
   const systemPrompt = buildChatSystemPrompt(productName, brand, chunks, language)
 
-  // ── 3. Build message history for Bedrock ─────────────────────────────────
+  // ── 3. Build Bedrock message history ─────────────────────────────────────
   const bedrockMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [
-    ...history.slice(-10), // keep last 10 turns to stay within context window
+    ...history.slice(-10), // keep last 10 turns within context window
     { role: 'user', content: message },
   ]
 
-  // ── 4. Stream response back to client ────────────────────────────────────
+  // ── 4. Stream response ────────────────────────────────────────────────────
   const acceptsStream = request.headers.get('accept')?.includes('text/event-stream')
 
   if (acceptsStream) {
@@ -116,8 +104,6 @@ export async function POST(request: Request) {
           fullReply = errToken
         } finally {
           controller.close()
-
-          // Persist conversation to DB asynchronously
           if (DB_READY) {
             persistChatHistory(manualId, message, fullReply).catch(() => null)
           }
@@ -135,7 +121,7 @@ export async function POST(request: Request) {
     })
   }
 
-  // ── 5. Non-streaming fallback (collect full response) ────────────────────
+  // ── 5. Non-streaming fallback ─────────────────────────────────────────────
   try {
     let reply = ''
     for await (const token of bedrockStream(bedrockMessages, systemPrompt)) {
@@ -149,9 +135,9 @@ export async function POST(request: Request) {
     return Response.json({ reply })
   } catch (err) {
     console.error('[chat] non-stream error:', err)
-    return Response.json(
-      { reply: "I'm sorry, I'm having trouble connecting right now. Please try again." },
-    )
+    return Response.json({
+      reply: "I'm sorry, I'm having trouble connecting right now. Please try again.",
+    })
   }
 }
 

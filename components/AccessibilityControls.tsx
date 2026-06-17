@@ -1,6 +1,6 @@
 'use client'
 
-import { AMinus, APlus, Contrast, Volume2, VolumeX } from 'lucide-react'
+import { Minus, Plus, Contrast, Volume2, VolumeX } from 'lucide-react'
 import { useAccessibility } from '@/context/AccessibilityContext'
 
 interface AccessibilityControlsProps {
@@ -60,7 +60,7 @@ export function AccessibilityControls({ availableLanguages = ['en'], className =
         aria-label="Decrease font size"
         className={`${btnBase} w-9 h-9 ${btnIdle} disabled:opacity-40 disabled:cursor-not-allowed`}
       >
-        <AMinus className="w-4 h-4" aria-hidden="true" />
+        <Minus className="w-4 h-4" aria-hidden="true" />
       </button>
 
       {/* Font size increase */}
@@ -70,7 +70,7 @@ export function AccessibilityControls({ availableLanguages = ['en'], className =
         aria-label="Increase font size"
         className={`${btnBase} w-9 h-9 ${btnIdle} disabled:opacity-40 disabled:cursor-not-allowed`}
       >
-        <APlus className="w-4 h-4" aria-hidden="true" />
+        <Plus className="w-4 h-4" aria-hidden="true" />
       </button>
 
       {/* High contrast toggle */}

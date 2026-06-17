@@ -27,7 +27,7 @@ export async function uploadManualFile(
   filename: string,
   userId: string,
   manualId: string,
-): Promise<{ pathname: string; contentType: string; size: number }> {
+): Promise<{ pathname: string; contentType: string }> {
   const sanitized = filename.replace(/[^a-zA-Z0-9._-]/g, '_')
   const pathname = `manuals/${userId}/${manualId}/${sanitized}`
 
@@ -40,7 +40,6 @@ export async function uploadManualFile(
   return {
     pathname: blob.pathname,
     contentType: blob.contentType,
-    size: blob.size,
   }
 }
 

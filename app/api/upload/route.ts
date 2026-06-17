@@ -70,13 +70,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Default: manual source file
-    const { pathname, contentType, size } = await uploadManualFile(
+    const { pathname, contentType } = await uploadManualFile(
       file,
       file.name,
       userId,
       manualId,
     )
-    return NextResponse.json({ pathname, contentType, size })
+    return NextResponse.json({ pathname, contentType })
   } catch (err) {
     console.error('[upload] error:', err)
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })

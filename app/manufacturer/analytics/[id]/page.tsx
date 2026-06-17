@@ -3,8 +3,18 @@
 import { use } from 'react'
 import { ArrowLeft, Download } from 'lucide-react'
 import useSWR from 'swr'
+import dynamic from 'next/dynamic'
 import { KPICard } from '@/components/KPICard'
-import { ViewsLineChart, TopQueriesBarChart } from '@/components/AnalyticsCharts'
+
+// Recharts is ~350 KB — load it only when the analytics page is visited
+const ViewsLineChart = dynamic(
+  () => import('@/components/AnalyticsCharts').then(m => m.ViewsLineChart),
+  { ssr: false, loading: () => <ChartSkeleton height={220} /> },
+)
+const TopQueriesBarChart = dynamic(
+  () => import('@/components/AnalyticsCharts').then(m => m.TopQueriesBarChart),
+  { ssr: false, loading: () => <ChartSkeleton height={180} /> },
+)
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 

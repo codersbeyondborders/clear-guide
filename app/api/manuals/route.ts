@@ -7,6 +7,8 @@ import {
   translateContent,
   buildKnowledgeBase,
 } from '@/lib/ai'
+import { CreateManualSchema, parseOrError } from '@/lib/validation'
+import { sanitizeManualInput } from '@/lib/sanitize'
 import type { ManualListItem } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
@@ -69,6 +71,9 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
+    // Keyset pagination: pass ?before=<ISO-timestamp> to page backwards in time
+    const before = searchParams.get('before')
+    const limit = Math.min(parseInt(searchParams.get('limit') ?? '50', 10), 100)
 
     const baseSQL = `
       SELECT
@@ -81,14 +86,15 @@ export async function GET(request: Request) {
       WHERE m."userId" = $1
         AND m.deleted_at IS NULL
         ${status && status !== 'all' ? 'AND m.status = $2' : ''}
+        ${before ? `AND m.updated_at < ${status && status !== 'all' ? '$3' : '$2'}` : ''}
       GROUP BY m.id
       ORDER BY m.updated_at DESC
-      LIMIT 100
+      LIMIT ${limit}
     `
 
-    const params = status && status !== 'all'
-      ? [session.user.id, status]
-      : [session.user.id]
+    const params: (string | number)[] = [session.user.id]
+    if (status && status !== 'all') params.push(status)
+    if (before) params.push(before)
 
     const result = await query(baseSQL, params)
     return NextResponse.json(result.rows)
@@ -127,25 +133,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const parsed = parseOrError(CreateManualSchema, body)
+    if (!parsed.success) return parsed.response
+
+    const sanitized = sanitizeManualInput(parsed.data)
+
     const {
       productName,
       productModel,
       brand,
       serialNumber,
-      languages = ['en'],
-      status = 'processing',
+      languages,
       uploadMethod,
       originalFileUrl,
-      rawFileText,   // extracted text if upload method — client sends after blob upload
-      sections: clientSections = [],
-    } = body
-
-    if (!productName || !productModel || !brand) {
-      return NextResponse.json(
-        { error: 'productName, productModel, and brand are required' },
-        { status: 400 },
-      )
-    }
+      rawFileText,
+      sections: clientSections,
+    } = sanitized
 
     // ── Step 1: Determine sections ──────────────────────────────────────────
     // If uploaded file: parse raw text into sections via Bedrock.
