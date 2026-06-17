@@ -25,7 +25,7 @@
        ┌────────┴──────────────────────────┴────────┐
        │                                             │
     ┌──▼────────┐  ┌─────────────┐  ┌──────────┐   │
-    │   Blob    │  │  Neon DB    │  │   AI API │   │
+    │   Blob    │  │  Aurora DB  │  │   AI API │   │
     │  Storage  │  │ (PostgreSQL)│  │ (Genai)  │   │
     └───────────┘  └─────────────┘  └──────────┘   │
        │
@@ -88,7 +88,7 @@
 │  ┌──────────────────────────────────────┤
 │  │  Server Functions                    │
 │  │  - Auth (Better Auth)                │
-│  │  - Database (Drizzle ORM)            │
+│  │  - Database (Drizzle ORM + pg, IAM)  │
 │  │  - AI (Google Genai)                 │
 │  │  - Storage (Vercel Blob)             │
 │  │  - File Processing                   │
@@ -102,41 +102,82 @@
 └──────────────────────────────────────────┘
 ```
 
-### Database (Neon PostgreSQL)
+### Database (AWS Aurora PostgreSQL 16)
 ```
-┌──────────────────────────────────────────┐
-│        Neon / PostgreSQL                 │
-│  ┌──────────────────────────────────────┤
-│  │  users                               │
-│  │  - id, email, password_hash,         │
-│  │    created_at, updated_at            │
-│  └──────────────────────────────────────┤
-│  ┌──────────────────────────────────────┤
-│  │  manuals                             │
-│  │  - id, manufacturer_id (FK),         │
-│  │    product_name, status, languages   │
-│  └──────────────────────────────────────┤
-│  ┌──────────────────────────────────────┤
-│  │  manual_sections                     │
-│  │  - id, manual_id (FK), title,        │
-│  │    content, image_urls, video_urls   │
-│  └──────────────────────────────────────┤
-│  ┌──────────────────────────────────────┤
-│  │  translations                        │
-│  │  - id, manual_id (FK), language,     │
-│  │    translated_content                │
-│  └──────────────────────────────────────┤
-│  ┌──────────────────────────────────────┤
-│  │  analytics                           │
-│  │  - id, manual_id (FK), user_session, │
-│  │    mode, time_spent, viewed_at       │
-│  └──────────────────────────────────────┤
-│  ┌──────────────────────────────────────┤
-│  │  ai_chat_history                     │
-│  │  - id, manual_id (FK), user_session, │
-│  │    role, message, created_at         │
-│  └──────────────────────────────────────┘
-└──────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│   AWS Aurora PostgreSQL 16 (Multi-AZ, RDS Proxy)     │
+│                                                       │
+│  Connection: pg Pool + @aws-sdk/rds-signer (IAM)     │
+│  Pooling:    RDS Proxy (serverless-safe)             │
+│  Encryption: KMS at-rest + TLS in-transit            │
+│  ORM:        Drizzle ORM (drizzle-orm/node-postgres) │
+│                                                       │
+│  ┌────────────────────────────────────────────────┤  │
+│  │  user  (Better Auth)                           │  │
+│  │  - id TEXT PK, name, email UNIQUE              │  │
+│  │  - emailVerified, image                        │  │
+│  │  - createdAt TIMESTAMPTZ, updatedAt TIMESTAMPTZ│  │
+│  └────────────────────────────────────────────────┤  │
+│  ┌────────────────────────────────────────────────┤  │
+│  │  session  (Better Auth)                        │  │
+│  │  - id TEXT PK, token UNIQUE, expiresAt         │  │
+│  │  - userId FK → user(id) ON DELETE CASCADE      │  │
+│  │  - idx: (userId), (expiresAt)                  │  │
+│  └────────────────────────────────────────────────┤  │
+│  ┌────────────────────────────────────────────────┤  │
+│  │  account  (Better Auth)                        │  │
+│  │  - id TEXT PK, providerId, accountId           │  │
+│  │  - userId FK → user(id) ON DELETE CASCADE      │  │
+│  │  - uidx: (providerId, accountId)               │  │
+│  └────────────────────────────────────────────────┤  │
+│  ┌────────────────────────────────────────────────┤  │
+│  │  verification  (Better Auth)                   │  │
+│  │  - id TEXT PK, identifier, value, expiresAt    │  │
+│  └────────────────────────────────────────────────┤  │
+│  ┌────────────────────────────────────────────────┤  │
+│  │  manuals  (App)                                │  │
+│  │  - id UUID PK (gen_random_uuid())              │  │
+│  │  - userId TEXT NOT NULL (scoped, no FK)        │  │
+│  │  - product_name, product_model, brand          │  │
+│  │  - status ENUM(draft|processing|published|     │  │
+│  │           archived)                            │  │
+│  │  - languages TEXT[]                            │  │
+│  │  - deleted_at TIMESTAMPTZ  (soft delete)       │  │
+│  │  - idx: (userId, status), (userId, created_at) │  │
+│  └────────────────────────────────────────────────┤  │
+│  ┌────────────────────────────────────────────────┤  │
+│  │  manual_sections  (App)                        │  │
+│  │  - id UUID PK, manual_id UUID, section_number  │  │
+│  │  - title, content TEXT                         │  │
+│  │  - image_urls TEXT[], video_urls TEXT[]         │  │
+│  │  - uidx: (manual_id, section_number)           │  │
+│  └────────────────────────────────────────────────┤  │
+│  ┌────────────────────────────────────────────────┤  │
+│  │  translations  (App)                           │  │
+│  │  - id UUID PK, manual_id UUID, section_id UUID │  │
+│  │  - language TEXT (BCP-47), translated_content  │  │
+│  │  - uidx: (manual_id, section_id, language)     │  │
+│  └────────────────────────────────────────────────┤  │
+│  ┌────────────────────────────────────────────────┤  │
+│  │  analytics  (App — monthly partitioned)        │  │
+│  │  - id UUID PK, manual_id UUID                  │  │
+│  │  - user_session_id TEXT, mode ENUM             │  │
+│  │  - time_spent_seconds INT, viewed_at TIMESTAMPTZ│ │
+│  │  - idx: (manual_id, viewed_at DESC)            │  │
+│  └────────────────────────────────────────────────┤  │
+│  ┌────────────────────────────────────────────────┤  │
+│  │  ai_chat_history  (App — monthly partitioned)  │  │
+│  │  - id UUID PK, manual_id UUID                  │  │
+│  │  - user_session_id TEXT, role ENUM(user|assistant)│ │
+│  │  - message TEXT, token_count INT               │  │
+│  │  - idx: (manual_id, session_id, created_at ASC)│  │
+│  └────────────────────────────────────────────────┤  │
+│  ┌────────────────────────────────────────────────┤  │
+│  │  manual_knowledge_base  (App)                  │  │
+│  │  - id UUID PK, manual_id UUID UNIQUE           │  │
+│  │  - chunks JSONB, model_version TEXT            │  │
+│  └────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────┘
 ```
 
 ### External Services
@@ -188,7 +229,7 @@
       - Generate alt text for accessibility
       - Build AI knowledge base from content
       - Translate content to 16 languages
-   d. Save manual, sections, translations to Neon DB
+   d. Save manual, sections, translations to Aurora DB
    ↓
 5. Return success → Redirect to dashboard
 ```
@@ -198,7 +239,7 @@
 ```
 1. User scans QR code or searches → /manual/:id
    ↓
-2. GET /manual/:id → Fetch manual data from Neon
+2. GET /manual/:id → Fetch manual data from Aurora
    ↓
 3. Show Welcome Screen (language picker + mode selector)
    ↓
@@ -235,7 +276,7 @@
    }
    ↓
 5. Backend:
-   a. Retrieve manual knowledge base from Neon
+   a. Retrieve manual knowledge base from Aurora (manual_knowledge_base table)
    b. Build AI context (sections, content)
    c. Call Google Genai API with question + context
    d. Stream response back
@@ -338,7 +379,7 @@ Files (Storage)
 - currentSection (section_id)
 - sessionId (unique per user session)
 
-### Server-Side State (Neon Database)
+### Server-Side State (Aurora PostgreSQL Database)
 - All user data, manuals, analytics
 - Translated content (cached)
 - AI chat history
@@ -402,12 +443,13 @@ Server
   ↓ Auth middleware (check session)
   ↓ Rate limiting (optional, Upstash)
   ↓ Input validation (Zod/Yup)
-  ↓ SQL injection prevention (Drizzle ORM)
+  ↓ SQL injection prevention (Drizzle ORM parameterizes all queries)
   ↓ Output sanitization
   ↓
 Database
-  ↓ Neon encrypted at rest
-  ↓ Row-level security (if using RLS)
+  ↓ Aurora encrypted at-rest (KMS) + in-transit (TLS enforced)
+  ↓ IAM-authenticated connections via RDS Proxy
+  ↓ UserId-scoped queries on every row (no RLS — enforced in application layer)
 ```
 
 ---
@@ -440,7 +482,8 @@ Vercel CI/CD
   ↓
   Deploy to Vercel Edge Network
   ↓
-  Database: Neon (auto-migrates with Drizzle)
+  Database: Aurora PostgreSQL (migrations via scripts/migrate.ts, DDL manual)
+  IAM Auth: RDS Signer token refresh on every connection
   ↓
   Storage: Vercel Blob (auto-provisioned)
   ↓
