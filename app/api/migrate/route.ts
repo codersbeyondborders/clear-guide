@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { Pool } from 'pg'
 
 // ---------------------------------------------------------------------------
 // ONE-TIME migration endpoint — DELETE THIS FILE after running once.
-// Protected by MIGRATION_SECRET env var to prevent unauthorised execution.
+// Uses PGPASSWORD directly (no OIDC) so it can run from a Vercel Function.
+// Protected by MIGRATION_SECRET env var.
 // ---------------------------------------------------------------------------
 
 const SQL = `
@@ -73,9 +74,9 @@ CREATE TABLE IF NOT EXISTS "verification" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_session_user_id        ON "session"("userId");
-CREATE INDEX IF NOT EXISTS idx_session_expires_at     ON "session"("expiresAt");
-CREATE INDEX IF NOT EXISTS idx_account_user_id        ON "account"("userId");
+CREATE INDEX IF NOT EXISTS idx_session_user_id         ON "session"("userId");
+CREATE INDEX IF NOT EXISTS idx_session_expires_at      ON "session"("expiresAt");
+CREATE INDEX IF NOT EXISTS idx_account_user_id         ON "account"("userId");
 CREATE INDEX IF NOT EXISTS idx_verification_identifier ON "verification"(identifier);
 
 -- manuals
@@ -97,10 +98,9 @@ CREATE TABLE IF NOT EXISTS manuals (
   updated_at        TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_manuals_user_status  ON manuals(user_id, status)       WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_manuals_user_created ON manuals(user_id, created_at DESC) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_manuals_status       ON manuals(status)                WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_manuals_product_name_text ON manuals USING gin(to_tsvector('english', product_name)) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_manuals_user_status   ON manuals(user_id, status)            WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_manuals_user_created  ON manuals(user_id, created_at DESC)   WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_manuals_status        ON manuals(status)                     WHERE deleted_at IS NULL;
 
 -- manual_sections
 CREATE TABLE IF NOT EXISTS manual_sections (
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS translations (
   CONSTRAINT uq_translation UNIQUE (manual_id, section_id, language)
 );
 
-CREATE INDEX IF NOT EXISTS idx_translations_manual_id       ON translations(manual_id);
+CREATE INDEX IF NOT EXISTS idx_translations_manual_id        ON translations(manual_id);
 CREATE INDEX IF NOT EXISTS idx_translations_section_language ON translations(section_id, language);
 
 -- manual_knowledge_base
@@ -150,13 +150,13 @@ CREATE TABLE IF NOT EXISTS manual_knowledge_base (
 
 CREATE INDEX IF NOT EXISTS idx_kb_manual_id ON manual_knowledge_base(manual_id);
 
--- analytics (partitioned)
+-- analytics (partitioned by month)
 CREATE TABLE IF NOT EXISTS analytics (
-  id                 UUID      NOT NULL DEFAULT gen_random_uuid(),
-  manual_id          UUID      NOT NULL,
-  user_session_id    TEXT      NOT NULL,
-  mode               view_mode NOT NULL DEFAULT 'web',
-  time_spent_seconds INT       NOT NULL DEFAULT 0 CHECK (time_spent_seconds >= 0),
+  id                 UUID        NOT NULL DEFAULT gen_random_uuid(),
+  manual_id          UUID        NOT NULL,
+  user_session_id    TEXT        NOT NULL,
+  mode               view_mode   NOT NULL DEFAULT 'web',
+  time_spent_seconds INT         NOT NULL DEFAULT 0 CHECK (time_spent_seconds >= 0),
   viewed_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ) PARTITION BY RANGE (viewed_at);
@@ -164,9 +164,7 @@ CREATE TABLE IF NOT EXISTS analytics (
 DO $$
 DECLARE
   y INT := EXTRACT(YEAR FROM NOW())::INT;
-  m INT;
-  pname TEXT;
-  s DATE; e DATE;
+  m INT; pname TEXT; s DATE; e DATE;
 BEGIN
   FOR m IN 1..12 LOOP
     pname := format('analytics_%s_%s', y, LPAD(m::TEXT, 2, '0'));
@@ -181,23 +179,21 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_analytics_manual_viewed ON analytics(manual_id, viewed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_analytics_session       ON analytics(user_session_id);
 
--- ai_chat_history (partitioned)
+-- ai_chat_history (partitioned by month)
 CREATE TABLE IF NOT EXISTS ai_chat_history (
-  id              UUID      NOT NULL DEFAULT gen_random_uuid(),
-  manual_id       UUID      NOT NULL,
-  user_session_id TEXT      NOT NULL,
-  role            chat_role NOT NULL,
-  message         TEXT      NOT NULL,
-  token_count     INT       NOT NULL DEFAULT 0 CHECK (token_count >= 0),
+  id              UUID        NOT NULL DEFAULT gen_random_uuid(),
+  manual_id       UUID        NOT NULL,
+  user_session_id TEXT        NOT NULL,
+  role            chat_role   NOT NULL,
+  message         TEXT        NOT NULL,
+  token_count     INT         NOT NULL DEFAULT 0 CHECK (token_count >= 0),
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ) PARTITION BY RANGE (created_at);
 
 DO $$
 DECLARE
   y INT := EXTRACT(YEAR FROM NOW())::INT;
-  m INT;
-  pname TEXT;
-  s DATE; e DATE;
+  m INT; pname TEXT; s DATE; e DATE;
 BEGIN
   FOR m IN 1..12 LOOP
     pname := format('ai_chat_history_%s_%s', y, LPAD(m::TEXT, 2, '0'));
@@ -217,13 +213,13 @@ CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$;
 
-DO $$ BEGIN CREATE TRIGGER trg_user_updated_at       BEFORE UPDATE ON "user"                FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TRIGGER trg_session_updated_at    BEFORE UPDATE ON "session"             FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TRIGGER trg_account_updated_at    BEFORE UPDATE ON "account"             FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TRIGGER trg_manuals_updated_at    BEFORE UPDATE ON manuals               FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TRIGGER trg_sections_updated_at   BEFORE UPDATE ON manual_sections       FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TRIGGER trg_translations_updated_at BEFORE UPDATE ON translations        FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TRIGGER trg_kb_updated_at         BEFORE UPDATE ON manual_knowledge_base FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TRIGGER trg_user_updated_at         BEFORE UPDATE ON "user"                FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TRIGGER trg_session_updated_at      BEFORE UPDATE ON "session"             FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TRIGGER trg_account_updated_at      BEFORE UPDATE ON "account"             FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TRIGGER trg_manuals_updated_at      BEFORE UPDATE ON manuals               FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TRIGGER trg_sections_updated_at     BEFORE UPDATE ON manual_sections       FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TRIGGER trg_translations_updated_at BEFORE UPDATE ON translations          FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TRIGGER trg_kb_updated_at           BEFORE UPDATE ON manual_knowledge_base FOR EACH ROW EXECUTE FUNCTION set_updated_at(); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 `
 
 export async function GET(req: NextRequest) {
@@ -232,8 +228,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Connect directly with password — no OIDC/IAM needed for migration
+  const pool = new Pool({
+    host:     process.env.PGHOST,
+    database: process.env.PGDATABASE ?? 'postgres',
+    port:     5432,
+    user:     process.env.PGUSER ?? 'postgres',
+    password: process.env.PGPASSWORD,
+    ssl:      { rejectUnauthorized: false },
+    max:      1,
+  })
+
+  const client = await pool.connect()
   try {
-    await query(SQL)
+    await client.query(SQL)
     return NextResponse.json({
       success: true,
       message: 'Migration complete. DELETE app/api/migrate/route.ts now.',
@@ -242,5 +250,8 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ success: false, error: message }, { status: 500 })
+  } finally {
+    client.release()
+    await pool.end()
   }
 }
