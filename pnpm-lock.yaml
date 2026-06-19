@@ -23,6 +23,9 @@ importers:
       '@vercel/functions':
         specifier: ^3.7.1
         version: 3.7.1(@aws-sdk/credential-provider-web-identity@3.972.53)(ws@8.21.0)
+      '@vercel/oidc-aws-credentials-provider':
+        specifier: ^3.1.4
+        version: 3.1.4
       better-auth:
         specifier: ^1.6.19
         version: 1.6.19(drizzle-orm@0.45.2(@types/pg@8.20.0)(kysely@0.29.2)(pg@8.21.0))(next@16.2.9(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.21.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -791,6 +794,10 @@ packages:
         optional: true
       ws:
         optional: true
+
+  '@vercel/oidc-aws-credentials-provider@3.1.4':
+    resolution: {integrity: sha512-JYfZSGs/losKgsT5Xtt4szmcoGi5HYgQmr4WUUK4fDYW9XPb5tPRAn8B/UpGNsFEBQuOwI+pRGSGI4OaxndbVg==}
+    engines: {node: '>= 20'}
 
   '@vercel/oidc@3.6.1':
     resolution: {integrity: sha512-8ipTFoiX3WBRrvXLjSrmgAiwtMDQk3EgSxe8N7v2rXBz39NBIIyoGXeVbJRoBcP8WEuVnvjvIQsggbGU7ZKrMw==}
@@ -2404,6 +2411,11 @@ snapshots:
     optionalDependencies:
       '@aws-sdk/credential-provider-web-identity': 3.972.53
       ws: 8.21.0
+
+  '@vercel/oidc-aws-credentials-provider@3.1.4':
+    dependencies:
+      '@aws-sdk/credential-provider-web-identity': 3.972.53
+      '@vercel/oidc': 3.6.1
 
   '@vercel/oidc@3.6.1':
     dependencies:
