@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { FileText, Settings, BarChart2, Trash2, Globe } from 'lucide-react'
+import { FileText, Settings, BarChart2, Trash2, Globe, Clock } from 'lucide-react'
 import type { ManualListItem } from '@/lib/types'
 
 interface ManualCardProps {
@@ -9,29 +9,33 @@ interface ManualCardProps {
   onDelete: (id: string) => void
 }
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
+const STATUS_CONFIG: Record<string, { bg: string; text: string; border: string; dot: string; label: string }> = {
   published: {
     bg: 'var(--color-primary-subtle)',
     text: 'var(--color-primary)',
-    border: 'color-mix(in srgb, var(--color-primary) 25%, transparent)',
+    border: 'color-mix(in srgb, var(--color-primary) 30%, transparent)',
+    dot: 'var(--color-primary)',
     label: 'Published',
   },
   draft: {
     bg: 'var(--color-background-subtle)',
     text: 'var(--color-muted-foreground)',
     border: 'var(--color-border)',
+    dot: 'var(--color-muted-foreground)',
     label: 'Draft',
   },
   processing: {
     bg: 'color-mix(in srgb, var(--color-warning) 10%, transparent)',
     text: 'var(--color-warning)',
-    border: 'color-mix(in srgb, var(--color-warning) 25%, transparent)',
+    border: 'color-mix(in srgb, var(--color-warning) 30%, transparent)',
+    dot: 'var(--color-warning)',
     label: 'Processing',
   },
   archived: {
     bg: 'var(--color-background-subtle)',
     text: 'var(--color-muted-foreground)',
     border: 'var(--color-border)',
+    dot: 'var(--color-muted-foreground)',
     label: 'Archived',
   },
 }
@@ -41,77 +45,99 @@ function timeAgo(dateStr: string) {
   const days = Math.floor(diff / 86_400_000)
   if (days === 0) return 'Today'
   if (days === 1) return 'Yesterday'
-  if (days < 30) return `${days} days ago`
+  if (days < 30) return `${days}d ago`
   const months = Math.floor(days / 30)
-  return `${months} month${months > 1 ? 's' : ''} ago`
+  return `${months}mo ago`
 }
 
 export function ManualCard({ manual, onDelete }: ManualCardProps) {
   const router = useRouter()
-  const statusKey = manual.status.toLowerCase()
-  const style = STATUS_STYLES[statusKey] ?? STATUS_STYLES.draft
+  const cfg = STATUS_CONFIG[manual.status.toLowerCase()] ?? STATUS_CONFIG.draft
 
   return (
     <article
-      className="rounded-2xl border flex flex-col transition-shadow hover:shadow-md"
+      className="group rounded-2xl border flex flex-col transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
       style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
     >
-      <div className="p-6 flex flex-col flex-1 gap-4">
-        {/* Top row */}
+      {/* Card body */}
+      <div className="p-5 flex flex-col flex-1 gap-3">
+
+        {/* Top row: icon + status */}
         <div className="flex items-start justify-between gap-3">
           <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
             style={{ backgroundColor: 'var(--color-primary-subtle)' }}
           >
             <FileText className="w-5 h-5" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
           </div>
           <span
-            className="text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap"
-            style={{ backgroundColor: style.bg, color: style.text, borderColor: style.border }}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap"
+            style={{ backgroundColor: cfg.bg, color: cfg.text, borderColor: cfg.border }}
           >
-            {style.label}
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: cfg.dot }}
+              aria-hidden="true"
+            />
+            {cfg.label}
           </span>
         </div>
 
         {/* Info */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 space-y-1">
           <h3
-            className="text-base font-bold truncate"
+            className="text-sm font-bold leading-snug line-clamp-2"
             style={{ color: 'var(--color-foreground)' }}
           >
             {manual.productName}
           </h3>
-          {manual.productModel && (
-            <p className="text-sm mt-0.5 truncate" style={{ color: 'var(--color-muted-foreground)' }}>
-              {manual.productModel}
+          {(manual.productModel || manual.brand) && (
+            <p className="text-xs truncate" style={{ color: 'var(--color-muted-foreground)' }}>
+              {[manual.brand, manual.productModel].filter(Boolean).join(' · ')}
             </p>
           )}
-          <div className="flex items-center gap-3 mt-2">
+        </div>
+
+        {/* Meta row */}
+        <div
+          className="flex items-center justify-between pt-3 border-t"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <div className="flex items-center gap-1" title={`Updated ${timeAgo(manual.updatedAt)}`}>
+            <Clock className="w-3.5 h-3.5" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true" />
             <span className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
-              Updated {timeAgo(manual.updatedAt)}
+              {timeAgo(manual.updatedAt)}
             </span>
-            {manual.languages?.length > 0 && (
-              <span
-                className="flex items-center gap-1 text-xs"
-                style={{ color: 'var(--color-muted-foreground)' }}
-              >
-                <Globe className="w-3 h-3" aria-hidden="true" />
-                {manual.languages.length} {manual.languages.length === 1 ? 'language' : 'languages'}
-              </span>
-            )}
           </div>
+          {(manual.languages?.length ?? 0) > 0 && (
+            <div className="flex items-center gap-1">
+              <Globe className="w-3.5 h-3.5" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true" />
+              <span className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+                {manual.languages.length} {manual.languages.length === 1 ? 'lang' : 'langs'}
+              </span>
+            </div>
+          )}
+          {manual.sectionCount != null && (
+            <span className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+              {manual.sectionCount} {manual.sectionCount === 1 ? 'section' : 'sections'}
+            </span>
+          )}
         </div>
       </div>
 
       {/* Actions */}
       <div
-        className="flex items-center gap-2 px-6 py-4 border-t"
-        style={{ borderColor: 'var(--color-border)' }}
+        className="flex items-center gap-2 px-5 py-3.5 border-t"
+        style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-subtle)' }}
       >
         <button
           onClick={() => router.push(`/manufacturer/edit/${manual.id}`)}
-          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-foreground)' }}
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:border-primary"
+          style={{
+            borderColor: 'var(--color-border-strong)',
+            color: 'var(--color-foreground)',
+            backgroundColor: 'var(--color-card)',
+          }}
           aria-label={`Edit ${manual.productName}`}
         >
           <Settings className="w-3.5 h-3.5" aria-hidden="true" />
@@ -120,7 +146,11 @@ export function ManualCard({ manual, onDelete }: ManualCardProps) {
         <button
           onClick={() => router.push(`/manufacturer/analytics/${manual.id}`)}
           className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-foreground)' }}
+          style={{
+            borderColor: 'var(--color-border-strong)',
+            color: 'var(--color-foreground)',
+            backgroundColor: 'var(--color-card)',
+          }}
           aria-label={`View analytics for ${manual.productName}`}
         >
           <BarChart2 className="w-3.5 h-3.5" aria-hidden="true" />
@@ -128,8 +158,8 @@ export function ManualCard({ manual, onDelete }: ManualCardProps) {
         </button>
         <button
           onClick={() => onDelete(manual.id)}
-          className="w-9 h-9 flex items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)' }}
+          className="w-9 h-9 flex items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:bg-red-50 hover:border-red-200 hover:text-red-600"
+          style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)', backgroundColor: 'var(--color-card)' }}
           aria-label={`Delete ${manual.productName}`}
         >
           <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />

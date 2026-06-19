@@ -25,6 +25,7 @@ export function Step4({ isEdit = false }: { isEdit?: boolean }) {
         languages: formData.languages,
         status,
         uploadMethod: formData.uploadMethod,
+        originalFileUrl: formData.uploadedFilePathname ?? null,
         sections: formData.sections,
       }
 
