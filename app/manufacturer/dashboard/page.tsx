@@ -104,8 +104,9 @@ export default function ManufacturerDashboard() {
   const { manuals, isLoading, isError, deleteManual } = useManuals()
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
-  const initials = user?.name
-    ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+  const displayName: string = user?.user_metadata?.full_name ?? user?.email ?? ''
+  const initials = displayName
+    ? displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'MF'
 
   const handleDeleteRequest = (id: string) => {
