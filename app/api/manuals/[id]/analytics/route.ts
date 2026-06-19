@@ -50,7 +50,7 @@ export async function GET(
 
     // Verify the manual belongs to this user
     const ownerCheck = await readQuery(
-      `SELECT product_name FROM manuals WHERE id = $1 AND "userId" = $2 AND deleted_at IS NULL`,
+      `SELECT product_name FROM manuals WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
       [id, session.user.id],
     )
     if (!ownerCheck.rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
