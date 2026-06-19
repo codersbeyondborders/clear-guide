@@ -23,6 +23,7 @@ function getClient() {
     credentials: awsCredentialsProvider({
       roleArn: process.env.AWS_ROLE_ARN!,
       clientConfig: { region: process.env.AWS_REGION ?? 'us-east-1' },
+      tokenAudience: 'https://vercel.com',
     }),
   })
 }
