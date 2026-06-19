@@ -1,29 +1,17 @@
 import { betterAuth } from 'better-auth'
 import { Pool } from 'pg'
-import { Signer } from '@aws-sdk/rds-signer'
-import { awsCredentialsProvider } from '@vercel/oidc-aws-credentials-provider'
 
 // ---------------------------------------------------------------------------
-// Shared pg Pool — used by both Better Auth and the app's db helpers.
-// Better Auth needs a pg Pool directly (not Drizzle), so we export it here
-// and import it from lib/db.ts to keep a single connection pool.
+// Auth Pool — uses PGPASSWORD env var for direct password auth.
+// Better Auth needs a pg Pool directly; OIDC/IAM is used for app data queries
+// in lib/db.ts, but auth session queries use password auth for reliability.
 // ---------------------------------------------------------------------------
-const signer = new Signer({
-  credentials: awsCredentialsProvider({
-    roleArn: process.env.AWS_ROLE_ARN!,
-  }),
-  region: process.env.AWS_REGION!,
-  hostname: process.env.PGHOST!,
-  username: process.env.PGUSER ?? 'postgres',
-  port: 5432,
-})
-
 const authPool = new Pool({
   host: process.env.PGHOST,
   database: process.env.PGDATABASE ?? 'postgres',
   port: 5432,
   user: process.env.PGUSER ?? 'postgres',
-  password: () => signer.getAuthToken(),
+  password: process.env.PGPASSWORD,
   ssl: { rejectUnauthorized: false },
   max: 10,
 })
