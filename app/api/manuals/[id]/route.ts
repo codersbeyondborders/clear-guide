@@ -65,9 +65,9 @@ export async function GET(
     const manualResult = await query(
       `SELECT id, product_name AS "productName", product_model AS "productModel",
               brand, serial_number AS "serialNumber", status, languages,
-              thumbnail_url AS "coverImage", created_at AS "createdAt", updated_at AS "updatedAt"
+              cover_image AS "coverImage", created_at AS "createdAt", updated_at AS "updatedAt"
        FROM manuals
-       WHERE id = $1 AND "userId" = $2 AND deleted_at IS NULL`,
+       WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
       [id, session.user.id],
     )
     if (!manualResult.rows[0]) return NextResponse.json({ error: 'Manual not found' }, { status: 404 })

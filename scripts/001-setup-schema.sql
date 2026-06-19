@@ -90,18 +90,21 @@ CREATE INDEX IF NOT EXISTS idx_verification_identifier ON "verification"(identif
 -- App: manuals
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS manuals (
-  id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       TEXT          NOT NULL,           -- scoped to auth user; no FK (see GUIDE)
-  product_name  VARCHAR(255)  NOT NULL,
-  product_model VARCHAR(255),
-  brand         VARCHAR(255),
-  description   TEXT,
-  status        manual_status NOT NULL DEFAULT 'draft',
-  languages     TEXT[]        NOT NULL DEFAULT '{}',
-  cover_image   TEXT,
-  deleted_at    TIMESTAMPTZ,                       -- soft delete
-  created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
-  updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+  id                  UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id             TEXT          NOT NULL,           -- scoped to auth user; no FK (see GUIDE)
+  product_name        VARCHAR(255)  NOT NULL,
+  product_model       VARCHAR(255),
+  brand               VARCHAR(255),
+  description         TEXT,
+  serial_number       VARCHAR(255),
+  status              manual_status NOT NULL DEFAULT 'draft',
+  languages           TEXT[]        NOT NULL DEFAULT '{}',
+  cover_image         TEXT,                             -- alias: thumbnail_url in queries
+  upload_method       VARCHAR(50),                      -- 'upload' | 'manual'
+  original_file_url   TEXT,                             -- Blob pathname of the source file
+  deleted_at          TIMESTAMPTZ,                      -- soft delete
+  created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
 
 -- Composite indexes for common dashboard query patterns
@@ -155,6 +158,7 @@ CREATE TABLE IF NOT EXISTS translations (
   section_id          UUID        NOT NULL REFERENCES manual_sections(id) ON DELETE CASCADE,
   language            VARCHAR(10) NOT NULL,  -- BCP-47 (e.g. 'fr', 'es', 'zh-CN')
   translated_content  TEXT        NOT NULL,
+  generated_at        TIMESTAMPTZ,                      -- set when AI translation completes
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT uq_translation UNIQUE (manual_id, section_id, language)
@@ -176,6 +180,7 @@ CREATE TABLE IF NOT EXISTS manual_knowledge_base (
   chunks         JSONB       NOT NULL DEFAULT '[]',   -- [{text, embedding_id, section_id}]
   model_version  VARCHAR(100),
   indexed_at     TIMESTAMPTZ,
+  built_at       TIMESTAMPTZ,                         -- set when AI knowledge base is built
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT uq_kb_manual UNIQUE (manual_id)

@@ -78,12 +78,12 @@ export async function GET(request: Request) {
     const baseSQL = `
       SELECT
         m.id, m.product_name AS "productName", m.product_model AS "productModel",
-        m.brand, m.status, m.languages, m.thumbnail_url AS "coverImage",
+        m.brand, m.status, m.languages, m.cover_image AS "coverImage",
         m.created_at AS "createdAt", m.updated_at AS "updatedAt",
         COUNT(s.id)::int AS "sectionCount"
       FROM manuals m
       LEFT JOIN manual_sections s ON s.manual_id = m.id
-      WHERE m."userId" = $1
+      WHERE m.user_id = $1
         AND m.deleted_at IS NULL
         ${status && status !== 'all' ? 'AND m.status = $2' : ''}
         ${before ? `AND m.updated_at < ${status && status !== 'all' ? '$3' : '$2'}` : ''}
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
     await withTransaction(async (client) => {
       const manualResult = await client.query(
         `INSERT INTO manuals
-           ("userId", product_name, product_model, brand, serial_number,
+           (user_id, product_name, product_model, brand, serial_number,
             status, languages, upload_method, original_file_url)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING id`,
@@ -214,7 +214,7 @@ export async function POST(request: Request) {
     // Return immediately with the created manual
     const result = await query(
       `SELECT id, product_name AS "productName", product_model AS "productModel",
-              brand, status, languages, thumbnail_url AS "coverImage",
+              brand, status, languages, cover_image AS "coverImage",
               created_at AS "createdAt", updated_at AS "updatedAt"
        FROM manuals WHERE id = $1`,
       [manualId!],
@@ -252,11 +252,12 @@ async function runAIPipeline(params: {
         const translated = await translateContent(section.content, lang, context)
         await query(
           `INSERT INTO translations
-             (manual_id, section_id, language, translated_content)
-           VALUES ($1, $2, $3, $4)
+             (manual_id, section_id, language, translated_content, generated_at)
+           VALUES ($1, $2, $3, $4, NOW())
            ON CONFLICT (manual_id, section_id, language)
            DO UPDATE SET translated_content = EXCLUDED.translated_content,
-                         generated_at = NOW()`,
+                         generated_at = NOW(),
+                         updated_at = NOW()`,
           [manualId, section.id, lang, translated],
         )
       }
@@ -265,12 +266,13 @@ async function runAIPipeline(params: {
     // Step B: Build knowledge base for RAG chat
     const { chunks, modelVersion } = await buildKnowledgeBase(sections)
     await query(
-      `INSERT INTO manual_knowledge_base (manual_id, chunks, model_version)
-       VALUES ($1, $2, $3)
+      `INSERT INTO manual_knowledge_base (manual_id, chunks, model_version, built_at)
+       VALUES ($1, $2, $3, NOW())
        ON CONFLICT (manual_id)
        DO UPDATE SET chunks = EXCLUDED.chunks,
                      model_version = EXCLUDED.model_version,
-                     built_at = NOW()`,
+                     built_at = NOW(),
+                     updated_at = NOW()`,
       [manualId, JSON.stringify(chunks), modelVersion],
     )
 
