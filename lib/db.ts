@@ -11,7 +11,6 @@ const signer = new Signer({
   credentials: awsCredentialsProvider({
     roleArn: process.env.AWS_ROLE_ARN!,
     clientConfig: { region: process.env.AWS_REGION! },
-    tokenAudience: 'https://vercel.com',
   }),
   region: process.env.AWS_REGION!,
   hostname: process.env.PGHOST!,
@@ -45,7 +44,6 @@ const readSigner = process.env.PGHOST_READ
       credentials: awsCredentialsProvider({
         roleArn: process.env.AWS_ROLE_ARN!,
         clientConfig: { region: process.env.AWS_REGION! },
-        tokenAudience: 'https://vercel.com',
       }),
       region: process.env.AWS_REGION!,
       hostname: process.env.PGHOST_READ,
