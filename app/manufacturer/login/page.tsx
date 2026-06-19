@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Eye, EyeOff, Lock } from 'lucide-react'
-import { signIn } from '@/lib/auth-client'
+import { createClient } from '@/lib/supabase/client'
 
 const DEMO_EMAIL = 'demo@brewtech.com'
 const DEMO_PASSWORD = 'password123'
@@ -21,9 +21,10 @@ export default function ManufacturerLogin() {
     setError('')
     setLoading(true)
     try {
-      const result = await signIn.email({ email, password })
-      if (result.error) {
-        setError(result.error.message ?? 'Invalid email or password.')
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        setError(error.message ?? 'Invalid email or password.')
       } else {
         router.push('/manufacturer/dashboard')
         router.refresh()

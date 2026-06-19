@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
-import { auth } from '@/lib/auth'
+import { getUser } from '@/lib/auth'
 import { AuthForm } from '@/components/auth-form'
 import type { Metadata } from 'next'
 
@@ -14,8 +13,8 @@ export default async function SignInPage({
 }: {
   searchParams: Promise<{ redirectTo?: string }>
 }) {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (session?.user) redirect('/manufacturer/dashboard')
+  const user = await getUser()
+  if (user) redirect('/manufacturer/dashboard')
 
   const { redirectTo } = await searchParams
 

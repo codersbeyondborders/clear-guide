@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
-import { auth } from '@/lib/auth'
+import { getUser } from '@/lib/auth'
 import { AuthForm } from '@/components/auth-form'
 import type { Metadata } from 'next'
 
@@ -10,8 +9,8 @@ export const metadata: Metadata = {
 }
 
 export default async function SignUpPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (session?.user) redirect('/manufacturer/dashboard')
+  const user = await getUser()
+  if (user) redirect('/manufacturer/dashboard')
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-background px-4">

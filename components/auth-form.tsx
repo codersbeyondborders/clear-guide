@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { signIn, signUp } from '@/lib/auth-client'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface AuthFormProps {
   mode: 'sign-in' | 'sign-up'
@@ -20,22 +20,36 @@ export function AuthForm({ mode, redirectTo = '/manufacturer/dashboard' }: AuthF
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
     setIsLoading(true)
+
+    const supabase = createClient()
 
     try {
       if (isSignUp) {
-        const result = await signUp.email({ email, password, name })
-        if (result.error) throw new Error(result.error.message ?? 'Sign up failed')
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { name },
+            emailRedirectTo:
+              process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
+              `${window.location.origin}/auth/callback`,
+          },
+        })
+        if (error) throw new Error(error.message)
+        setSuccess('Account created! Check your email to confirm before signing in.')
       } else {
-        const result = await signIn.email({ email, password })
-        if (result.error) throw new Error(result.error.message ?? 'Sign in failed')
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw new Error(error.message)
+        router.push(redirectTo)
+        router.refresh()
       }
-      router.push(redirectTo)
-      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -45,10 +59,10 @@ export function AuthForm({ mode, redirectTo = '/manufacturer/dashboard' }: AuthF
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5" aria-label={isSignUp ? 'Create account form' : 'Sign in form'}>
-      {/* Live region for loading/status announcements */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {isLoading ? (isSignUp ? 'Creating your account...' : 'Signing you in...') : ''}
       </div>
+
       {isSignUp && (
         <div className="flex flex-col gap-1.5">
           <label htmlFor="name" className="text-sm font-medium text-foreground">
@@ -93,10 +107,10 @@ export function AuthForm({ mode, redirectTo = '/manufacturer/dashboard' }: AuthF
             type={showPassword ? 'text' : 'password'}
             autoComplete={isSignUp ? 'new-password' : 'current-password'}
             required
-            minLength={8}
+            minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={isSignUp ? 'Min. 8 characters' : '••••••••'}
+            placeholder={isSignUp ? 'Min. 6 characters' : '••••••••'}
             className="auth-input pr-10"
           />
           <button
@@ -116,9 +130,15 @@ export function AuthForm({ mode, redirectTo = '/manufacturer/dashboard' }: AuthF
         </p>
       )}
 
+      {success && (
+        <p role="status" aria-live="polite" className="text-sm text-success bg-success/10 border border-success/20 rounded-md px-3 py-2">
+          {success}
+        </p>
+      )}
+
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || !!success}
         className="btn-primary flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isLoading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
