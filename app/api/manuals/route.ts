@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { auth } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import { query, withTransaction } from '@/lib/db'
 import {
   parseManualContent,
@@ -64,8 +63,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
-    if (!session?.user) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
       LIMIT ${limit}
     `
 
-    const params: (string | number)[] = [session.user.id]
+    const params: (string | number)[] = [user.id]
     if (status && status !== 'all') params.push(status)
     if (before) params.push(before)
 
@@ -128,8 +128,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
-    if (!session?.user) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -172,7 +173,7 @@ export async function POST(request: Request) {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING id`,
         [
-          session.user.id,
+          user.id,
           productName,
           productModel,
           brand,

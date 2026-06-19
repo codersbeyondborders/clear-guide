@@ -1,4 +1,3 @@
-import { auth } from '@/lib/auth'
-import { toNextJsHandler } from 'better-auth/next-js'
-
-export const { GET, POST } = toNextJsHandler(auth.handler)
+// Supabase handles auth natively — no custom auth API route needed.
+// Auth callbacks go through /auth/callback/route.ts
+export {}

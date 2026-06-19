@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { auth } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import { readQuery } from '@/lib/db'
 
 const DB_READY = !!(process.env.PGHOST && process.env.AWS_ROLE_ARN)
@@ -45,13 +44,14 @@ export async function GET(
   }
 
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     // Verify the manual belongs to this user
     const ownerCheck = await readQuery(
       `SELECT product_name FROM manuals WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
-      [id, session.user.id],
+      [id, user.id],
     )
     if (!ownerCheck.rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 

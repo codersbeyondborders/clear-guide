@@ -13,8 +13,7 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { auth } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import {
   uploadManualFile,
   uploadThumbnail,
@@ -25,8 +24,9 @@ import {
 
 export async function POST(request: NextRequest) {
   // Auth check
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const userId = session.user.id
+    const userId = user.id
 
     if (type === 'thumbnail') {
       const { pathname } = await uploadThumbnail(file, file.name, userId, manualId)

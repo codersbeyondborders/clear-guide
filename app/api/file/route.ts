@@ -10,14 +10,14 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { auth } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import { servePrivateBlob } from '@/lib/blob'
 
 export async function GET(request: NextRequest) {
   // Auth check — private files require a valid session
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
   // Ensure users can only access files under their own userId prefix
   // (thumbnails and sections follow the same userId path structure)
-  const userId = session.user.id
+  const userId = user.id
   const isOwned =
     pathname.startsWith(`manuals/${userId}/`) ||
     pathname.startsWith(`thumbnails/${userId}/`) ||

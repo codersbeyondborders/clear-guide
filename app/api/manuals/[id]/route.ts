@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { auth } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import { query, withTransaction } from '@/lib/db'
 import { UpdateManualSchema, parseOrError } from '@/lib/validation'
 import { sanitizeManualInput } from '@/lib/sanitize'
@@ -59,8 +58,9 @@ export async function GET(
   }
 
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const manualResult = await query(
       `SELECT id, product_name AS "productName", product_model AS "productModel",
@@ -68,7 +68,7 @@ export async function GET(
               cover_image AS "coverImage", created_at AS "createdAt", updated_at AS "updatedAt"
        FROM manuals
        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
-      [id, session.user.id],
+      [id, user.id],
     )
     if (!manualResult.rows[0]) return NextResponse.json({ error: 'Manual not found' }, { status: 404 })
 
@@ -103,8 +103,9 @@ export async function PUT(
   }
 
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const parsed = parseOrError(UpdateManualSchema, body)
     if (!parsed.success) return parsed.response
@@ -132,7 +133,7 @@ export async function PUT(
            status = COALESCE($6, status),
            updated_at = NOW()
          WHERE id = $7 AND user_id = $8 AND deleted_at IS NULL`,
-        [productName, productModel, brand, serialNumber ?? null, languages, status, id, session.user.id],
+        [productName, productModel, brand, serialNumber ?? null, languages, status, id, user.id],
       )
 
       // Replace sections if provided
@@ -170,13 +171,14 @@ export async function DELETE(
   }
 
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     await query(
       `UPDATE manuals SET deleted_at = NOW(), updated_at = NOW()
        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
-      [id, session.user.id],
+      [id, user.id],
     )
 
     return new NextResponse(null, { status: 204 })
