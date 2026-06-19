@@ -65,9 +65,9 @@ export async function GET(
     const manualResult = await query(
       `SELECT id, product_name AS "productName", product_model AS "productModel",
               brand, serial_number AS "serialNumber", status, languages,
-              thumbnail_url AS "coverImage", created_at AS "createdAt", updated_at AS "updatedAt"
+              cover_image AS "coverImage", created_at AS "createdAt", updated_at AS "updatedAt"
        FROM manuals
-       WHERE id = $1 AND "userId" = $2 AND deleted_at IS NULL`,
+       WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
       [id, session.user.id],
     )
     if (!manualResult.rows[0]) return NextResponse.json({ error: 'Manual not found' }, { status: 404 })
@@ -131,7 +131,7 @@ export async function PUT(
            languages = COALESCE($5, languages),
            status = COALESCE($6, status),
            updated_at = NOW()
-         WHERE id = $7 AND "userId" = $8 AND deleted_at IS NULL`,
+         WHERE id = $7 AND user_id = $8 AND deleted_at IS NULL`,
         [productName, productModel, brand, serialNumber ?? null, languages, status, id, session.user.id],
       )
 
@@ -175,7 +175,7 @@ export async function DELETE(
 
     await query(
       `UPDATE manuals SET deleted_at = NOW(), updated_at = NOW()
-       WHERE id = $1 AND "userId" = $2 AND deleted_at IS NULL`,
+       WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
       [id, session.user.id],
     )
 

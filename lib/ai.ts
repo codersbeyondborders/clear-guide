@@ -1,18 +1,19 @@
 import {
   BedrockRuntimeClient,
-  InvokeModelCommand,
-  InvokeModelWithResponseStreamCommand,
+  ConverseCommand,
+  ConverseStreamCommand,
 } from '@aws-sdk/client-bedrock-runtime'
 import { awsCredentialsProvider } from '@vercel/functions/oidc'
 
 // ---------------------------------------------------------------------------
-// Client
-// Uses the same IAM role as Aurora — must have:
+// Client — Amazon Nova Lite v2
+// Uses the Converse / ConverseStream API (model-agnostic message format).
+// IAM role must have:
 //   bedrock:InvokeModel
 //   bedrock:InvokeModelWithResponseStream
 // ---------------------------------------------------------------------------
 const MODEL_ID =
-  process.env.BEDROCK_MODEL_ID ?? 'anthropic.claude-3-sonnet-20240229-v1:0'
+  process.env.BEDROCK_MODEL_ID ?? 'amazon.nova-lite-v1:0'
 
 const AI_READY = !!(process.env.AWS_REGION && process.env.AWS_ROLE_ARN)
 
@@ -64,23 +65,15 @@ export async function bedrockInvoke(
   }
 
   const client = getClient()
-  const body = {
-    anthropic_version: 'bedrock-2023-05-31',
-    max_tokens: 4096,
-    system: systemPrompt ?? 'You are a helpful assistant for ClearGuide, a product manual platform.',
-    messages: [{ role: 'user', content: prompt }],
-  }
-
-  const cmd = new InvokeModelCommand({
+  const cmd = new ConverseCommand({
     modelId: MODEL_ID,
-    contentType: 'application/json',
-    accept: 'application/json',
-    body: JSON.stringify(body),
+    system: [{ text: systemPrompt ?? 'You are a helpful assistant for ClearGuide, a product manual platform.' }],
+    messages: [{ role: 'user', content: [{ text: prompt }] }],
+    inferenceConfig: { maxTokens: 4096 },
   })
 
   const response = await client.send(cmd)
-  const decoded = JSON.parse(new TextDecoder().decode(response.body))
-  return decoded.content?.[0]?.text ?? ''
+  return response.output?.message?.content?.[0]?.text ?? ''
 }
 
 /**
@@ -101,30 +94,22 @@ export async function* bedrockStream(
   }
 
   const client = getClient()
-  const body = {
-    anthropic_version: 'bedrock-2023-05-31',
-    max_tokens: 2048,
-    system: systemPrompt,
-    messages,
-  }
-
-  const cmd = new InvokeModelWithResponseStreamCommand({
+  const cmd = new ConverseStreamCommand({
     modelId: MODEL_ID,
-    contentType: 'application/json',
-    accept: 'application/json',
-    body: JSON.stringify(body),
+    system: [{ text: systemPrompt }],
+    messages: messages.map(m => ({
+      role: m.role,
+      content: [{ text: m.content }],
+    })),
+    inferenceConfig: { maxTokens: 2048 },
   })
 
   const response = await client.send(cmd)
-  if (!response.body) return
+  if (!response.stream) return
 
-  for await (const event of response.body) {
-    if (event.chunk?.bytes) {
-      const chunk = JSON.parse(new TextDecoder().decode(event.chunk.bytes))
-      if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'text_delta') {
-        yield chunk.delta.text as string
-      }
-    }
+  for await (const event of response.stream) {
+    const text = event.contentBlockDelta?.delta?.text
+    if (text) yield text
   }
 }
 
