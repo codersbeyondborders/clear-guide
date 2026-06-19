@@ -22,6 +22,7 @@ export interface EditorFormData {
   uploadMethod: 'upload' | 'sections' | null
   uploadedFileName: string | null
   uploadedFileSize: number | null
+  uploadedFilePathname: string | null
   sections: Section[]
   status: 'draft' | 'published'
 }
@@ -47,6 +48,7 @@ const DEFAULT_FORM: EditorFormData = {
   uploadMethod: null,
   uploadedFileName: null,
   uploadedFileSize: null,
+  uploadedFilePathname: null,
   sections: [],
   status: 'draft',
 }

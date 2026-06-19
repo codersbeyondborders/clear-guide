@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com",
               "media-src 'self' blob: https://*.public.blob.vercel-storage.com",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in https://*.vercel-storage.com",
               "frame-ancestors 'self'",
             ].join('; '),
           },

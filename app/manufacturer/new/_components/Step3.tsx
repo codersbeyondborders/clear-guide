@@ -63,11 +63,11 @@ export function Step3() {
       {method === 'upload' && (
         <div className="space-y-4">
           <FileUpload
-            onFile={(name, size) =>
-              updateFormData({ uploadedFileName: name, uploadedFileSize: size })
+            onFile={(name, size, pathname) =>
+              updateFormData({ uploadedFileName: name, uploadedFileSize: size, uploadedFilePathname: pathname ?? null })
             }
             currentFileName={formData.uploadedFileName}
-            onClear={() => updateFormData({ uploadedFileName: null, uploadedFileSize: null })}
+            onClear={() => updateFormData({ uploadedFileName: null, uploadedFileSize: null, uploadedFilePathname: null })}
           />
           <button
             type="button"
