@@ -3,7 +3,7 @@ import {
   ConverseCommand,
   ConverseStreamCommand,
 } from '@aws-sdk/client-bedrock-runtime'
-import { awsCredentialsProvider } from '@vercel/functions/oidc'
+import { awsCredentialsProvider } from '@vercel/oidc-aws-credentials-provider'
 
 // ---------------------------------------------------------------------------
 // Client — Amazon Nova Lite v2
@@ -22,7 +22,6 @@ function getClient() {
     region: process.env.AWS_REGION ?? 'us-east-1',
     credentials: awsCredentialsProvider({
       roleArn: process.env.AWS_ROLE_ARN!,
-      clientConfig: { region: process.env.AWS_REGION ?? 'us-east-1' },
     }),
   })
 }
