@@ -4,29 +4,38 @@ import { awsCredentialsProvider } from '@vercel/oidc-aws-credentials-provider'
 import { attachDatabasePool } from '@vercel/functions'
 
 // ---------------------------------------------------------------------------
-// IAM-authenticated RDS Signer
-// The auth token is short-lived (~15 min) and fetched on every new connection.
+// Auth strategy: prefer PGPASSWORD (direct) over OIDC (IAM).
+// OIDC requires a correctly configured Vercel ↔ AWS trust policy; until that
+// is confirmed working, PGPASSWORD is the reliable fallback.
 // ---------------------------------------------------------------------------
-const signer = new Signer({
-  credentials: awsCredentialsProvider({
-    roleArn: process.env.AWS_ROLE_ARN!,
-  }),
-  region: process.env.AWS_REGION!,
-  hostname: process.env.PGHOST!,
-  username: process.env.PGUSER ?? 'postgres',
-  port: 5432,
-})
+const usePassword = !!process.env.PGPASSWORD
+
+function getPassword(host: string): (() => Promise<string>) | string | undefined {
+  if (usePassword) return process.env.PGPASSWORD
+
+  const signer = new Signer({
+    credentials: awsCredentialsProvider({
+      roleArn: process.env.AWS_ROLE_ARN!,
+    }),
+    region: process.env.AWS_REGION!,
+    hostname: host,
+    username: process.env.PGUSER ?? 'postgres',
+    port: 5432,
+  })
+  return () => signer.getAuthToken()
+}
 
 // ---------------------------------------------------------------------------
-// Primary write pool — connects to the Writer endpoint (or RDS Proxy writer)
+// Primary write pool
 // ---------------------------------------------------------------------------
+const writerHost = process.env.PGHOST ?? ''
+
 export const pool = new Pool({
-  host: process.env.PGHOST,
+  host: writerHost,
   database: process.env.PGDATABASE ?? 'postgres',
   port: 5432,
   user: process.env.PGUSER ?? 'postgres',
-  // password is a function so each new connection gets a fresh IAM token
-  password: () => signer.getAuthToken(),
+  password: getPassword(writerHost),
   ssl: { rejectUnauthorized: false },
   max: 20,
   idleTimeoutMillis: 30_000,
@@ -35,27 +44,16 @@ export const pool = new Pool({
 attachDatabasePool(pool)
 
 // ---------------------------------------------------------------------------
-// Read replica pool — connects to the Reader endpoint for analytics queries.
-// Falls back to the writer pool if PGHOST_READ is not set.
+// Read replica pool — falls back to writer if PGHOST_READ is not set
 // ---------------------------------------------------------------------------
-const readSigner = process.env.PGHOST_READ
-  ? new Signer({
-      credentials: awsCredentialsProvider({
-        roleArn: process.env.AWS_ROLE_ARN!,
-      }),
-      region: process.env.AWS_REGION!,
-      hostname: process.env.PGHOST_READ,
-      username: process.env.PGUSER ?? 'postgres',
-      port: 5432,
-    })
-  : signer
+const readerHost = process.env.PGHOST_READ ?? writerHost
 
 export const readPool = new Pool({
-  host: process.env.PGHOST_READ ?? process.env.PGHOST,
+  host: readerHost,
   database: process.env.PGDATABASE ?? 'postgres',
   port: 5432,
   user: process.env.PGUSER ?? 'postgres',
-  password: () => readSigner.getAuthToken(),
+  password: getPassword(readerHost),
   ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30_000,
@@ -67,26 +65,14 @@ attachDatabasePool(readPool)
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Single-query helper — uses the writer pool by default. */
 export async function query(text: string, params?: unknown[]) {
   return pool.query(text, params)
 }
 
-/** Single-query helper — uses the reader pool for analytics / read-heavy queries. */
 export async function readQuery(text: string, params?: unknown[]) {
   return readPool.query(text, params)
 }
 
-/**
- * Acquires a client from the writer pool for multi-statement transactions.
- * Always releases the client in the finally block.
- *
- * @example
- * await withTransaction(async (client) => {
- *   await client.query('INSERT INTO manuals ...', [...])
- *   await client.query('INSERT INTO manual_sections ...', [...])
- * })
- */
 export async function withTransaction<T>(
   fn: (client: ClientBase) => Promise<T>,
 ): Promise<T> {
@@ -104,10 +90,6 @@ export async function withTransaction<T>(
   }
 }
 
-/**
- * Acquires a client from the writer pool without wrapping in a transaction.
- * Use for multi-query flows that manage their own transaction boundaries.
- */
 export async function withConnection<T>(
   fn: (client: ClientBase) => Promise<T>,
 ): Promise<T> {
