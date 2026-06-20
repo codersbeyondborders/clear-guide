@@ -10,7 +10,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  Cell,
 } from 'recharts'
 
 // ---------------------------------------------------------------------------
@@ -100,14 +99,7 @@ export function TopQueriesBarChart({ data }: TopQueriesBarChartProps) {
           itemStyle={{ color: 'var(--color-primary)' }}
           cursor={{ fill: 'var(--color-background-subtle)' }}
         />
-        <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={20}>
-          {data.map((_, i) => (
-            <Cell
-              key={i}
-              fill={i === 0 ? 'var(--color-primary)' : 'color-mix(in srgb, var(--color-primary) 50%, transparent)'}
-            />
-          ))}
-        </Bar>
+        <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={20} fill="var(--color-primary)" />
       </BarChart>
     </ResponsiveContainer>
   )
