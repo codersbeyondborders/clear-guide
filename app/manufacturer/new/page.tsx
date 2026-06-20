@@ -392,10 +392,10 @@ function ManualEditor() {
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {[
-              { id: 'productName',  label: 'Product Name',    placeholder: 'e.g. Smart Coffee Maker X1', required: true  },
-              { id: 'productModel', label: 'Product Model',   placeholder: 'e.g. SCM-X1-2024',           required: false },
-              { id: 'brand',        label: 'Make (Brand)',    placeholder: 'e.g. BrewTech',               required: false },
-              { id: 'serialNumber', label: 'Serial Number',   placeholder: 'e.g. BT-123456',             required: false },
+              { id: 'productName'  as const, label: 'Product Name',    placeholder: 'e.g. Smart Coffee Maker X1', required: true  },
+              { id: 'productModel' as const, label: 'Product Model',   placeholder: 'e.g. SCM-X1-2024',           required: false },
+              { id: 'brand'        as const, label: 'Make (Brand)',    placeholder: 'e.g. BrewTech',               required: false },
+              { id: 'serialNumber' as const, label: 'Serial Number',   placeholder: 'e.g. BT-123456',             required: false },
             ].map(f => (
               <div key={f.id} className="space-y-1.5">
                 <label
@@ -409,7 +409,7 @@ function ManualEditor() {
                 <input
                   id={f.id}
                   type="text"
-                  value={(formData as Record<string, string>)[f.id] ?? ''}
+                  value={formData[f.id] ?? ''}
                   onChange={e => updateFormData({ [f.id]: e.target.value })}
                   placeholder={f.placeholder}
                   aria-required={f.required}
