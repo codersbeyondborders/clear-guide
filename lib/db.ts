@@ -3,22 +3,30 @@ import { Signer } from '@aws-sdk/rds-signer'
 import { awsCredentialsProvider } from '@vercel/functions/oidc'
 import { attachDatabasePool } from '@vercel/functions'
 
+// Aurora PostgreSQL integration env vars (AWS_APG_* prefix)
+const auroraHost   = process.env.AWS_APG_PGHOST!
+const auroraUser   = process.env.AWS_APG_PGUSER ?? 'postgres'
+const auroraDb     = process.env.AWS_APG_PGDATABASE ?? 'postgres'
+const auroraPort   = parseInt(process.env.AWS_APG_PGPORT ?? '5432', 10)
+const auroraRegion = process.env.AWS_APG_AWS_REGION!
+const auroraRole   = process.env.AWS_APG_AWS_ROLE_ARN!
+
 const signer = new Signer({
   credentials: awsCredentialsProvider({
-    roleArn: process.env.AWS_ROLE_ARN!,
-    clientConfig: { region: process.env.AWS_REGION },
+    roleArn: auroraRole,
+    clientConfig: { region: auroraRegion },
   }),
-  region: process.env.AWS_REGION!,
-  hostname: process.env.PGHOST!,
-  username: process.env.PGUSER ?? 'postgres',
-  port: 5432,
+  region: auroraRegion,
+  hostname: auroraHost,
+  username: auroraUser,
+  port: auroraPort,
 })
 
 export const pool = new Pool({
-  host: process.env.PGHOST,
-  database: process.env.PGDATABASE ?? 'postgres',
-  port: 5432,
-  user: process.env.PGUSER ?? 'postgres',
+  host: auroraHost,
+  database: auroraDb,
+  port: auroraPort,
+  user: auroraUser,
   password: () => signer.getAuthToken(),
   ssl: { rejectUnauthorized: false },
   max: 20,
