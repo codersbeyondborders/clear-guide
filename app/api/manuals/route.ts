@@ -8,60 +8,11 @@ import {
 } from '@/lib/ai'
 import { CreateManualSchema, parseOrError } from '@/lib/validation'
 import { sanitizeManualInput } from '@/lib/sanitize'
-import type { ManualListItem } from '@/lib/types'
-
-// ---------------------------------------------------------------------------
-// Mock data — used when DB env vars are not configured
-// ---------------------------------------------------------------------------
-const MOCK_MANUALS: ManualListItem[] = [
-  {
-    id: 'demo-qr-123',
-    productName: 'Smart Coffee Maker X1',
-    productModel: 'CX-1000',
-    brand: 'BrewTech',
-    status: 'published',
-    languages: ['en', 'fr', 'de'],
-    coverImage: null,
-    sectionCount: 3,
-    createdAt: new Date(Date.now() - 86_400_000 * 10).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-qr-456',
-    productName: 'Smart Toaster Pro',
-    productModel: 'TP-200',
-    brand: 'BrewTech',
-    status: 'draft',
-    languages: ['en'],
-    coverImage: null,
-    sectionCount: 2,
-    createdAt: new Date(Date.now() - 86_400_000 * 5).toISOString(),
-    updatedAt: new Date(Date.now() - 86_400_000 * 2).toISOString(),
-  },
-  {
-    id: 'demo-qr-789',
-    productName: 'SonicBuds Wireless Earbuds',
-    productModel: 'SB-Pro',
-    brand: 'AudioSync',
-    status: 'published',
-    languages: ['en', 'es', 'ja', 'ko'],
-    coverImage: null,
-    sectionCount: 3,
-    createdAt: new Date(Date.now() - 86_400_000 * 20).toISOString(),
-    updatedAt: new Date(Date.now() - 86_400_000 * 5).toISOString(),
-  },
-]
-
-const DB_READY = !!(process.env.AWS_APG_PGHOST && (process.env.AWS_APG_AWS_ROLE_ARN ?? process.env.AWS_ROLE_ARN))
 
 // ---------------------------------------------------------------------------
 // GET /api/manuals
 // ---------------------------------------------------------------------------
 export async function GET(request: Request) {
-  if (!DB_READY) {
-    return NextResponse.json(MOCK_MANUALS)
-  }
-
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -109,23 +60,6 @@ export async function GET(request: Request) {
 // ---------------------------------------------------------------------------
 export async function POST(request: Request) {
   const body = await request.json()
-
-  if (!DB_READY) {
-    // Mock: return a new manual immediately without AI processing
-    const newManual: ManualListItem = {
-      id: `manual-${Date.now()}`,
-      productName: body.productName ?? 'New Manual',
-      productModel: body.productModel ?? null,
-      brand: body.brand ?? null,
-      status: 'published',
-      languages: body.languages ?? ['en'],
-      coverImage: null,
-      sectionCount: body.sections?.length ?? 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-    return NextResponse.json(newManual, { status: 201 })
-  }
 
   try {
     const supabase = await createClient()

@@ -5,44 +5,6 @@ import { UpdateManualSchema, parseOrError } from '@/lib/validation'
 import { sanitizeManualInput } from '@/lib/sanitize'
 
 // ---------------------------------------------------------------------------
-// Mock section data — used when DB is not configured
-// ---------------------------------------------------------------------------
-const MOCK_SECTIONS: Record<string, {
-  id: string; productName: string; productModel: string; brand: string
-  serialNumber: string | null; status: string; languages: string[]
-  sections: { id: string; sectionNumber: number; title: string; content: string; imageUrls: string[]; videoUrls: string[] }[]
-}> = {
-  'demo-qr-123': {
-    id: 'demo-qr-123', productName: 'Smart Coffee Maker X1', productModel: 'CX-1000',
-    brand: 'BrewTech', serialNumber: null, status: 'published', languages: ['en', 'fr', 'de'],
-    sections: [
-      { id: 's1', sectionNumber: 1, title: 'Getting Started', content: 'Welcome to your new Smart Coffee Maker. Before first use, please wash all removable parts with warm soapy water.', imageUrls: [], videoUrls: [] },
-      { id: 's2', sectionNumber: 2, title: 'Brewing Coffee', content: '1. Add coffee grounds to the filter.\n2. Fill the reservoir with fresh water.\n3. Press the Brew button.', imageUrls: [], videoUrls: [] },
-      { id: 's3', sectionNumber: 3, title: 'Cleaning & Maintenance', content: 'Descale the machine every 3 months. Wipe the exterior with a damp cloth.', imageUrls: [], videoUrls: [] },
-    ],
-  },
-  'demo-qr-456': {
-    id: 'demo-qr-456', productName: 'Smart Toaster Pro', productModel: 'TP-200',
-    brand: 'BrewTech', serialNumber: null, status: 'draft', languages: ['en'],
-    sections: [
-      { id: 't1', sectionNumber: 1, title: 'Initial Setup', content: 'Place the toaster on a flat, heat-resistant surface. Plug it into a grounded outlet.', imageUrls: [], videoUrls: [] },
-      { id: 't2', sectionNumber: 2, title: 'Toasting Bread', content: 'Insert bread into the slots. Select your desired browning level using the dial (1-6). Press the lever down to start.', imageUrls: [], videoUrls: [] },
-    ],
-  },
-  'demo-qr-789': {
-    id: 'demo-qr-789', productName: 'SonicBuds Wireless Earbuds', productModel: 'SB-Pro',
-    brand: 'AudioSync', serialNumber: null, status: 'published', languages: ['en', 'es', 'ja', 'ko'],
-    sections: [
-      { id: 'e1', sectionNumber: 1, title: 'Pairing with your Device', content: '1. Open the charging case lid.\n2. Go to Bluetooth settings.\n3. Select SonicBuds.', imageUrls: [], videoUrls: [] },
-      { id: 'e2', sectionNumber: 2, title: 'Touch Controls', content: 'Single tap: Play/Pause. Double tap right: Next track. Double tap left: Previous track.', imageUrls: [], videoUrls: [] },
-      { id: 'e3', sectionNumber: 3, title: 'Charging', content: 'Place the earbuds back into the case. The LED will pulse white while charging.', imageUrls: [], videoUrls: [] },
-    ],
-  },
-}
-
-const DB_READY = !!(process.env.AWS_APG_PGHOST && (process.env.AWS_APG_AWS_ROLE_ARN ?? process.env.AWS_ROLE_ARN))
-
-// ---------------------------------------------------------------------------
 // GET /api/manuals/:id
 // ---------------------------------------------------------------------------
 export async function GET(
@@ -50,12 +12,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params
-
-  if (!DB_READY) {
-    const manual = MOCK_SECTIONS[id]
-    if (!manual) return NextResponse.json({ error: 'Manual not found' }, { status: 404 })
-    return NextResponse.json(manual)
-  }
 
   try {
     const supabase = await createClient()
@@ -97,10 +53,6 @@ export async function PUT(
 ) {
   const { id } = await params
   const body = await request.json()
-
-  if (!DB_READY) {
-    return NextResponse.json({ ...body, id, updatedAt: new Date().toISOString() })
-  }
 
   try {
     const supabase = await createClient()
@@ -165,10 +117,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params
-
-  if (!DB_READY) {
-    return new NextResponse(null, { status: 204 })
-  }
 
   try {
     const supabase = await createClient()
