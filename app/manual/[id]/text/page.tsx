@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, ChevronLeft, ChevronRight, Volume2 } from 'lucide-react'
+import { useParams } from 'next/navigation'
 import { AccessibilityProvider, useAccessibility } from '@/context/AccessibilityContext'
-import { AccessibilityControls } from '@/components/AccessibilityControls'
+import { ViewerHeader } from '@/components/ViewerHeader'
+import { ViewerTabBar } from '@/components/ViewerTabBar'
 import { ManualSidebar } from '@/components/ManualSidebar'
 import { useTTS } from '@/hooks/useTTS'
+import { Volume2 } from 'lucide-react'
 
 interface Section {
   id: string
@@ -27,156 +28,162 @@ interface Manual {
   sections: Section[]
 }
 
-// ─── Inner page (needs AccessibilityContext) ──────────────────────────────────
 function TextModeContent({ manual }: { manual: Manual }) {
-  const router = useRouter()
   const params = useParams()
   const manualId = params.id as string
-
   const [activeIndex, setActiveIndex] = useState(0)
+  const [selectedLang, setSelectedLang] = useState(manual.languages[0] ?? 'en')
+  const [muted, setMuted] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
-  const { highContrast, fontSizeClass } = useAccessibility()
+  const { fontSizeClass } = useAccessibility()
   const { speak, ttsEnabled } = useTTS()
-  const hc = highContrast
 
   const section = manual.sections[activeIndex]
-  const hasPrev = activeIndex > 0
-  const hasNext = activeIndex < manual.sections.length - 1
 
-  // Scroll content to top on section change
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }, [activeIndex])
 
-  // Auto-read if TTS enabled
   useEffect(() => {
-    if (section && ttsEnabled) speak(`${section.title}. ${section.content}`)
+    if (section && ttsEnabled && !muted) speak(`${section.title}. ${section.content}`)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section?.id, ttsEnabled])
+  }, [section?.id, ttsEnabled, muted])
 
   return (
-    <div className={`min-h-screen flex flex-col ${hc ? 'bg-black text-yellow-400' : 'bg-background text-foreground'}`}>
-      {/* Header */}
-      <header className={`border-b sticky top-0 z-20 ${hc ? 'bg-gray-900 border-yellow-400' : 'bg-card border-border'}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3">
-          {/* Back */}
-          <button
-            onClick={() => router.push(`/manual/${manualId}`)}
-            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-colors flex-shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 ${hc ? 'border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black focus-visible:outline-yellow-400' : 'border-border hover:border-primary hover:text-primary focus-visible:outline-primary'}`}
-            aria-label="Back to mode selection"
-          >
-            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          </button>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
+      <ViewerHeader
+        productName={manual.productName}
+        manualId={manualId}
+        availableLanguages={manual.languages}
+        selectedLang={selectedLang}
+        onLangChange={setSelectedLang}
+        showMute={ttsEnabled}
+        muted={muted}
+        onToggleMute={() => setMuted(m => !m)}
+      />
 
-          {/* Title */}
-          <div className="flex-1 min-w-0">
-            <p className={`text-xs font-medium truncate ${hc ? 'text-yellow-600' : 'text-muted-foreground'}`}>{manual.productName}</p>
-            <p className={`text-sm font-semibold truncate ${hc ? 'text-yellow-300' : 'text-foreground'}`}>Text Guide</p>
-          </div>
-
-          {/* Accessibility controls */}
-          <AccessibilityControls availableLanguages={manual.languages} className="ml-auto" />
-        </div>
-      </header>
-
-      {/* Body */}
-      <div className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 flex gap-6 items-start">
+      {/* Two-panel layout */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
-        <ManualSidebar
-          sections={manual.sections}
-          activeIndex={activeIndex}
-          onSelect={setActiveIndex}
-        />
+        <aside
+          className="hidden lg:flex flex-col w-52 shrink-0 border-r overflow-y-auto"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)' }}
+          aria-label="Manual sections"
+        >
+          <p
+            className="px-4 pt-4 pb-2 text-xs font-semibold uppercase tracking-wider"
+            style={{ color: 'var(--color-muted-foreground)' }}
+          >
+            Sections
+          </p>
+          <nav>
+            <ul>
+              {manual.sections.map((s, idx) => (
+                <li key={s.id}>
+                  <button
+                    onClick={() => setActiveIndex(idx)}
+                    className="w-full text-left px-4 py-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    style={{
+                      backgroundColor: idx === activeIndex ? 'var(--color-primary-subtle)' : 'transparent',
+                      color: idx === activeIndex ? 'var(--color-primary)' : 'var(--color-foreground)',
+                      fontWeight: idx === activeIndex ? 600 : 400,
+                    }}
+                    aria-current={idx === activeIndex ? 'true' : undefined}
+                  >
+                    {s.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </aside>
 
-        {/* Content */}
+        {/* Content area */}
         <main
           id="main-content"
           ref={contentRef}
-          className="flex-1 min-w-0 space-y-6"
+          className="flex-1 overflow-y-auto p-6 lg:p-8"
           aria-live="polite"
           aria-atomic="false"
         >
-          {section ? (
-            <article className={`rounded-2xl border p-6 sm:p-8 ${hc ? 'bg-gray-900 border-yellow-400/40' : 'card'}`}>
-              {/* Section header */}
-              <header className="mb-5">
-                <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${hc ? 'text-yellow-600' : 'text-muted-foreground'}`}>
-                  Section {section.sectionNumber} of {manual.sections.length}
-                </p>
-                <div className="flex items-start gap-3">
-                  <h1 className={`text-2xl font-bold flex-1 text-balance ${hc ? 'text-yellow-300' : 'text-foreground'}`}>
-                    {section.title}
-                  </h1>
-                  {ttsEnabled && (
-                    <button
-                      onClick={() => speak(`${section.title}. ${section.content}`)}
-                      className={`w-9 h-9 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${hc ? 'border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black focus-visible:outline-yellow-400' : 'border-border text-muted-foreground hover:text-primary hover:border-primary focus-visible:outline-primary'}`}
-                      aria-label="Read section aloud"
-                    >
-                      <Volume2 className="w-4 h-4" aria-hidden="true" />
-                    </button>
-                  )}
-                </div>
-              </header>
+          {/* Mobile section nav */}
+          <div className="lg:hidden mb-4">
+            <ManualSidebar
+              sections={manual.sections}
+              activeIndex={activeIndex}
+              onSelect={setActiveIndex}
+            />
+          </div>
 
-              {/* Content */}
-              <div className={`prose max-w-none leading-relaxed whitespace-pre-line ${fontSizeClass} ${hc ? 'text-yellow-200' : 'text-foreground'}`}>
-                {section.content || <span className="text-muted-foreground italic">No content for this section.</span>}
+          {section ? (
+            <article className="max-w-2xl">
+              {/* Section title */}
+              <div className="flex items-start gap-3 mb-6">
+                <h1 className="text-2xl font-bold flex-1 text-balance" style={{ color: 'var(--color-foreground)' }}>
+                  {section.title}
+                </h1>
+                {ttsEnabled && (
+                  <button
+                    onClick={() => speak(`${section.title}. ${section.content}`)}
+                    className="w-9 h-9 rounded-full border flex items-center justify-center shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)' }}
+                    aria-label="Read section aloud"
+                  >
+                    <Volume2 className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                )}
               </div>
 
-              {/* Images */}
+              {/* Section image (first image shown prominently) */}
               {section.imageUrls.length > 0 && (
-                <section aria-label="Section images" className="mt-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {section.imageUrls.map((url, i) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        key={i}
-                        src={url}
-                        alt={`Section ${section.sectionNumber} image ${i + 1}`}
-                        className="w-full rounded-xl object-cover aspect-video border border-border"
-                      />
-                    ))}
-                  </div>
-                </section>
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={section.imageUrls[0]}
+                  alt={`${section.title} illustration`}
+                  className="w-full rounded-xl object-cover mb-6"
+                  style={{ maxHeight: '320px' }}
+                />
+              )}
+
+              {/* Section text */}
+              <div
+                className={`leading-relaxed whitespace-pre-line ${fontSizeClass}`}
+                style={{ color: 'var(--color-foreground)' }}
+              >
+                {section.content || (
+                  <span style={{ color: 'var(--color-muted-foreground)', fontStyle: 'italic' }}>
+                    No content for this section.
+                  </span>
+                )}
+              </div>
+
+              {/* Additional images */}
+              {section.imageUrls.length > 1 && (
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  {section.imageUrls.slice(1).map((url, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={i}
+                      src={url}
+                      alt={`${section.title} image ${i + 2}`}
+                      className="w-full rounded-xl object-cover aspect-video"
+                    />
+                  ))}
+                </div>
               )}
             </article>
           ) : (
-            <p className={hc ? 'text-yellow-600' : 'text-muted-foreground'}>No sections available.</p>
+            <p style={{ color: 'var(--color-muted-foreground)' }}>No sections available.</p>
           )}
-
-          {/* Prev / Next navigation */}
-          <nav aria-label="Section navigation" className="flex items-center justify-between pt-2">
-            <button
-              onClick={() => setActiveIndex(i => i - 1)}
-              disabled={!hasPrev}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed ${hc ? 'border border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black focus-visible:outline-yellow-400' : 'btn-outline'}`}
-              aria-label="Previous section"
-            >
-              <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-              Previous
-            </button>
-            <span className={`text-xs ${hc ? 'text-yellow-600' : 'text-muted-foreground'}`} aria-live="polite">
-              {activeIndex + 1} / {manual.sections.length}
-            </span>
-            <button
-              onClick={() => setActiveIndex(i => i + 1)}
-              disabled={!hasNext}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed ${hc ? 'border border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black focus-visible:outline-yellow-400' : 'btn-primary'}`}
-              aria-label="Next section"
-            >
-              Next
-              <ChevronRight className="w-4 h-4" aria-hidden="true" />
-            </button>
-          </nav>
         </main>
       </div>
+
+      <ViewerTabBar manualId={manualId} activeMode="text" />
     </div>
   )
 }
 
-// ─── Loader shell ─────────────────────────────────────────────────────────────
 export default function TextModePage() {
   const params = useParams()
   const manualId = params.id as string
@@ -194,20 +201,18 @@ export default function TextModePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-4 border-t-transparent border-primary animate-spin" aria-label="Loading" />
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }} role="status" aria-label="Loading" />
       </div>
     )
   }
-
   if (!manual) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-destructive">Could not load manual.</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
+        <p style={{ color: 'var(--color-destructive)' }}>Could not load manual.</p>
       </div>
     )
   }
-
   return (
     <AccessibilityProvider initialLanguage={manual.languages?.[0] ?? 'en'}>
       <TextModeContent manual={manual} />

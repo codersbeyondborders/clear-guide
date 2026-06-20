@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@source '../app/**/*.{js,ts,jsx,tsx,mdx}';
+@source '../components/**/*.{js,ts,jsx,tsx,mdx}';
 
 /* ==========================================================================
    ClearGuide Design System — Tailwind CSS v4
@@ -9,6 +11,40 @@
 @theme inline {
   /* Fonts */
   --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
+
+  /* ---------- Emerald scale ---------- */
+  --color-emerald-50:  #f0fdf4;
+  --color-emerald-100: #dcfce7;
+  --color-emerald-200: #bbf7d0;
+  --color-emerald-300: #86efac;
+  --color-emerald-400: #4ade80;
+  --color-emerald-500: #22c55e;
+  --color-emerald-600: #16a34a;
+  --color-emerald-700: #15803d;
+  --color-emerald-800: #166534;
+  --color-emerald-900: #14532d;
+
+  /* ---------- Slate scale ---------- */
+  --color-slate-50:  #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+
+  /* ---------- Red scale (for error/X states) ---------- */
+  --color-red-50:  #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+
+  /* ---------- White / Black ---------- */
+  --color-white: #ffffff;
+  --color-black: #000000;
 
   /* ---------- Color Tokens — Light mode ---------- */
 
@@ -228,6 +264,14 @@
   .badge-green  { background: var(--color-primary-subtle); color: var(--color-primary); border-color: color-mix(in srgb, var(--color-primary) 25%, transparent); }
   .badge-slate  { background: var(--color-background-subtle); color: var(--color-muted-foreground); border-color: var(--color-border); }
   .badge-red    { background: color-mix(in srgb, var(--color-destructive) 10%, transparent); color: var(--color-destructive); border-color: color-mix(in srgb, var(--color-destructive) 25%, transparent); }
+
+  /* Footer links — dark background variant */
+  .footer-link {
+    color: rgba(255, 255, 255, 0.45);
+  }
+  .footer-link:hover {
+    color: #ffffff;
+  }
 }
 
 /* ==========================================================================

@@ -1,15 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, Loader2 } from 'lucide-react'
+import { CheckCircle2, Loader2 } from 'lucide-react'
 
 const AI_STEPS = [
-  'Uploading content to secure storage',
-  'Parsing document structure',
-  'Extracting sections and headings',
-  'Building AI knowledge base',
-  'Generating translations',
-  'Finalising and publishing',
+  'Parsing document structure...',
+  'Extracting sections and headings...',
+  'Generating accessibility metadata...',
+  'Building AI knowledge base...',
+  'Optimising for multimodal delivery...',
+  'Finalising and publishing...',
 ]
 
 interface AIProcessingOverlayProps {
@@ -20,25 +20,23 @@ interface AIProcessingOverlayProps {
 export function AIProcessingOverlay({ visible, onComplete }: AIProcessingOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [progress, setProgress] = useState(0)
-  const [done, setDone] = useState(false)
 
   useEffect(() => {
     if (!visible) {
       setCurrentStep(0)
       setProgress(0)
-      setDone(false)
       return
     }
 
-    const stepDuration = 700 // ms per step
+    const stepDuration = 800
     const interval = setInterval(() => {
-      setCurrentStep((prev) => {
+      setCurrentStep(prev => {
         const next = prev + 1
-        setProgress(Math.round((next / AI_STEPS.length) * 100))
+        const pct = Math.round((next / AI_STEPS.length) * 100)
+        setProgress(pct)
         if (next >= AI_STEPS.length) {
           clearInterval(interval)
-          setDone(true)
-          setTimeout(onComplete, 1200)
+          setTimeout(onComplete, 800)
         }
         return next
       })
@@ -54,51 +52,90 @@ export function AIProcessingOverlay({ visible, onComplete }: AIProcessingOverlay
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Processing your manual"
+      aria-label="AI is processing your manual"
       aria-live="polite"
     >
       {/* Backdrop */}
       <div
         className="absolute inset-0"
-        style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+        style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(6px)' }}
         aria-hidden="true"
       />
 
-      {/* Panel */}
+      {/* Card */}
       <div
-        className="relative w-full max-w-md rounded-2xl border p-8 space-y-6 shadow-2xl"
+        className="relative w-full max-w-sm rounded-3xl border shadow-2xl p-8 space-y-5"
         style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       >
-        {/* Logo / icon */}
-        <div className="text-center space-y-2">
-          {done ? (
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
-              style={{ backgroundColor: 'var(--color-primary)' }}
-            >
-              <Check className="w-7 h-7 text-white" strokeWidth={2.5} aria-hidden="true" />
-            </div>
-          ) : (
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
-              style={{ backgroundColor: 'var(--color-primary-subtle)' }}
-            >
-              <Loader2
-                className="w-7 h-7 animate-spin"
-                style={{ color: 'var(--color-primary)' }}
-                aria-hidden="true"
-              />
-            </div>
-          )}
+        {/* Sparkle icon */}
+        <div className="flex justify-center">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            style={{ backgroundColor: 'var(--color-primary-subtle)' }}
+          >
+            {/* Sparkle / AI icon */}
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+              <path d="M16 4L17.8 12.2L26 14L17.8 15.8L16 24L14.2 15.8L6 14L14.2 12.2L16 4Z" fill="var(--color-primary)" />
+              <path d="M26 22L26.9 25.1L30 26L26.9 26.9L26 30L25.1 26.9L22 26L25.1 25.1L26 22Z" fill="var(--color-primary)" opacity="0.7" />
+              <path d="M7 4L7.7 6.3L10 7L7.7 7.7L7 10L6.3 7.7L4 7L6.3 6.3L7 4Z" fill="var(--color-primary)" opacity="0.5" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="text-center space-y-1">
           <h2 className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>
-            {done ? 'Manual Ready!' : 'Processing your manual…'}
+            AI is Processing
           </h2>
-          <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
-            {done
-              ? 'Your manual has been saved and is ready to share.'
-              : 'This usually takes a few seconds.'}
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-muted-foreground)' }}>
+            Hang tight while we build your accessible manual.
           </p>
         </div>
+
+        {/* Step list */}
+        <ol className="space-y-2.5" aria-label="Processing steps">
+          {AI_STEPS.map((step, i) => {
+            const isCompleted = i < currentStep
+            const isActive = i === currentStep
+
+            return (
+              <li key={step} className="flex items-center gap-3">
+                {isCompleted ? (
+                  <CheckCircle2
+                    className="w-5 h-5 shrink-0"
+                    style={{ color: 'var(--color-primary)' }}
+                    aria-hidden="true"
+                  />
+                ) : isActive ? (
+                  <Loader2
+                    className="w-5 h-5 shrink-0 animate-spin"
+                    style={{ color: 'var(--color-primary)' }}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <span
+                    className="w-5 h-5 rounded-full border-2 shrink-0"
+                    style={{ borderColor: 'var(--color-border)' }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span
+                  className="text-sm"
+                  style={{
+                    color: isCompleted
+                      ? 'var(--color-primary)'
+                      : isActive
+                      ? 'var(--color-foreground)'
+                      : 'var(--color-muted-foreground)',
+                    fontWeight: isActive ? 600 : isCompleted ? 500 : 400,
+                  }}
+                >
+                  {step}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
 
         {/* Progress bar */}
         <div>
@@ -116,51 +153,7 @@ export function AIProcessingOverlay({ visible, onComplete }: AIProcessingOverlay
               style={{ width: `${progress}%`, backgroundColor: 'var(--color-primary)' }}
             />
           </div>
-          <p className="text-xs text-right mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
-            {progress}%
-          </p>
         </div>
-
-        {/* Step list */}
-        <ol className="space-y-2" aria-label="Processing steps">
-          {AI_STEPS.map((step, i) => {
-            const isCompleted = i < currentStep
-            const isActive = i === currentStep && !done
-            return (
-              <li key={step} className="flex items-center gap-3">
-                <span
-                  className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
-                  style={{
-                    backgroundColor: isCompleted
-                      ? 'var(--color-primary)'
-                      : isActive
-                      ? 'var(--color-primary-subtle)'
-                      : 'var(--color-background-subtle)',
-                    color: isCompleted
-                      ? 'var(--color-primary-foreground)'
-                      : isActive
-                      ? 'var(--color-primary)'
-                      : 'var(--color-muted-foreground)',
-                  }}
-                  aria-hidden="true"
-                >
-                  {isCompleted ? <Check className="w-3 h-3" strokeWidth={3} /> : i + 1}
-                </span>
-                <span
-                  className="text-sm"
-                  style={{
-                    color: isCompleted || isActive
-                      ? 'var(--color-foreground)'
-                      : 'var(--color-muted-foreground)',
-                    fontWeight: isActive ? 600 : 400,
-                  }}
-                >
-                  {step}
-                </span>
-              </li>
-            )
-          })}
-        </ol>
       </div>
     </div>
   )
