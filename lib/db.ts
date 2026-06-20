@@ -4,10 +4,16 @@ import { awsCredentialsProvider } from '@vercel/oidc-aws-credentials-provider'
 import { attachDatabasePool } from '@vercel/functions'
 
 // ---------------------------------------------------------------------------
-// Auth strategy: prefer PGPASSWORD (direct) over OIDC (IAM).
-// OIDC requires a correctly configured Vercel ↔ AWS trust policy; until that
-// is confirmed working, PGPASSWORD is the reliable fallback.
+// Aurora PostgreSQL uses AWS_APG_* prefixed env vars from the Vercel
+// Aurora integration. Fall back to PGPASSWORD for local dev if set.
 // ---------------------------------------------------------------------------
+const apgHost     = process.env.AWS_APG_PGHOST     ?? ''
+const apgUser     = process.env.AWS_APG_PGUSER     ?? 'postgres'
+const apgDatabase = process.env.AWS_APG_PGDATABASE ?? 'postgres'
+const apgPort     = parseInt(process.env.AWS_APG_PGPORT ?? '5432', 10)
+const apgRegion   = process.env.AWS_APG_AWS_REGION ?? process.env.AWS_REGION ?? 'us-east-1'
+const apgRoleArn  = process.env.AWS_APG_AWS_ROLE_ARN ?? process.env.AWS_ROLE_ARN ?? ''
+
 const usePassword = !!process.env.PGPASSWORD
 
 function getPassword(host: string): (() => Promise<string>) | string | undefined {
@@ -15,12 +21,12 @@ function getPassword(host: string): (() => Promise<string>) | string | undefined
 
   const signer = new Signer({
     credentials: awsCredentialsProvider({
-      roleArn: process.env.AWS_ROLE_ARN!,
+      roleArn: apgRoleArn,
     }),
-    region: process.env.AWS_REGION!,
+    region: apgRegion,
     hostname: host,
-    username: process.env.PGUSER ?? 'postgres',
-    port: 5432,
+    username: apgUser,
+    port: apgPort,
   })
   return () => signer.getAuthToken()
 }
@@ -28,13 +34,13 @@ function getPassword(host: string): (() => Promise<string>) | string | undefined
 // ---------------------------------------------------------------------------
 // Primary write pool
 // ---------------------------------------------------------------------------
-const writerHost = process.env.PGHOST ?? ''
+const writerHost = apgHost
 
 export const pool = new Pool({
   host: writerHost,
-  database: process.env.PGDATABASE ?? 'postgres',
-  port: 5432,
-  user: process.env.PGUSER ?? 'postgres',
+  database: apgDatabase,
+  port: apgPort,
+  user: apgUser,
   password: getPassword(writerHost),
   ssl: { rejectUnauthorized: false },
   max: 20,
@@ -44,15 +50,15 @@ export const pool = new Pool({
 attachDatabasePool(pool)
 
 // ---------------------------------------------------------------------------
-// Read replica pool — falls back to writer if PGHOST_READ is not set
+// Read replica pool — falls back to writer if no dedicated reader host
 // ---------------------------------------------------------------------------
-const readerHost = process.env.PGHOST_READ ?? writerHost
+const readerHost = process.env.AWS_APG_PGHOST_READ ?? writerHost
 
 export const readPool = new Pool({
   host: readerHost,
-  database: process.env.PGDATABASE ?? 'postgres',
-  port: 5432,
-  user: process.env.PGUSER ?? 'postgres',
+  database: apgDatabase,
+  port: apgPort,
+  user: apgUser,
   password: getPassword(readerHost),
   ssl: { rejectUnauthorized: false },
   max: 10,

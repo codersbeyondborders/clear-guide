@@ -52,7 +52,7 @@ const MOCK_MANUALS: ManualListItem[] = [
   },
 ]
 
-const DB_READY = !!(process.env.PGHOST && process.env.AWS_ROLE_ARN)
+const DB_READY = !!(process.env.AWS_APG_PGHOST && (process.env.AWS_APG_AWS_ROLE_ARN ?? process.env.AWS_ROLE_ARN))
 
 // ---------------------------------------------------------------------------
 // GET /api/manuals
