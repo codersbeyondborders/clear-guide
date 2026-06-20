@@ -2,24 +2,46 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Plus, FileText, LogOut, LayoutDashboard, BookOpen,
-  Globe, TrendingUp, Clock, Trash2, AlertTriangle,
-} from 'lucide-react'
+import { Plus, AlertTriangle } from 'lucide-react'
 import { ManualCard } from '@/components/ManualCard'
 import { useManuals } from '@/hooks/useManuals'
 import { useAuth } from '@/hooks/useAuth'
+import Image from 'next/image'
+
+// ---------------------------------------------------------------------------
+// ClearGuide logo SVG (inline, matches brand)
+// ---------------------------------------------------------------------------
+function ClearGuideLogo() {
+  return (
+    <a href="/" className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded" aria-label="ClearGuide home">
+      <div
+        className="w-8 h-8 rounded-lg flex items-center justify-center"
+        style={{ backgroundColor: 'var(--color-primary)' }}
+        aria-hidden="true"
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="6" height="7" rx="1" fill="white" opacity="0.9" />
+          <rect x="10" y="2" width="6" height="4" rx="1" fill="white" opacity="0.7" />
+          <rect x="2" y="11" width="14" height="2" rx="1" fill="white" opacity="0.9" />
+          <rect x="2" y="14" width="10" height="2" rx="1" fill="white" opacity="0.6" />
+        </svg>
+      </div>
+      <div className="leading-none">
+        <span className="block text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>Clear</span>
+        <span className="block text-sm font-bold" style={{ color: 'var(--color-primary)' }}>Guide</span>
+      </div>
+    </a>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Delete confirmation modal
 // ---------------------------------------------------------------------------
-interface DeleteModalProps {
+function DeleteModal({ manualName, onConfirm, onCancel }: {
   manualName: string
   onConfirm: () => void
   onCancel: () => void
-}
-
-function DeleteModal({ manualName, onConfirm, onCancel }: DeleteModalProps) {
+}) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -29,12 +51,12 @@ function DeleteModal({ manualName, onConfirm, onCancel }: DeleteModalProps) {
     >
       <div
         className="absolute inset-0"
-        style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
         onClick={onCancel}
         aria-hidden="true"
       />
       <div
-        className="relative w-full max-w-sm rounded-2xl border p-6 space-y-5 shadow-2xl"
+        className="relative w-full max-w-sm rounded-2xl border p-6 space-y-5 shadow-xl"
         style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       >
         <div
@@ -53,10 +75,16 @@ function DeleteModal({ manualName, onConfirm, onCancel }: DeleteModalProps) {
           </p>
         </div>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="btn-outline flex-1">Cancel</button>
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2 px-4 rounded-full border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-foreground)', backgroundColor: 'var(--color-card)' }}
+          >
+            Cancel
+          </button>
           <button
             onClick={onConfirm}
-            className="flex-1 inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex-1 py-2 px-4 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             style={{ backgroundColor: 'var(--color-destructive)', color: 'var(--color-destructive-foreground)' }}
           >
             Delete
@@ -68,74 +96,26 @@ function DeleteModal({ manualName, onConfirm, onCancel }: DeleteModalProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Skeleton
+// Card skeleton
 // ---------------------------------------------------------------------------
 function ManualCardSkeleton() {
   return (
     <div
-      className="rounded-2xl border p-6 space-y-4 animate-pulse"
+      className="rounded-2xl border p-5 space-y-4 animate-pulse"
       style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
     >
       <div className="flex items-start justify-between">
         <div className="w-11 h-11 rounded-xl" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-        <div className="w-20 h-6 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+        <div className="w-16 h-4 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
       </div>
       <div className="space-y-2">
         <div className="h-4 w-3/4 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
         <div className="h-3 w-1/2 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-        <div className="h-3 w-1/3 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
       </div>
-      <div className="flex gap-2 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-        <div className="flex-1 h-8 rounded-lg" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-        <div className="flex-1 h-8 rounded-lg" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-        <div className="w-9 h-8 rounded-lg" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-      </div>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Stat card
-// ---------------------------------------------------------------------------
-interface StatCardProps {
-  label: string
-  value: string | number
-  icon: React.ReactNode
-  accent?: boolean
-}
-
-function StatCard({ label, value, icon, accent }: StatCardProps) {
-  return (
-    <div
-      className="rounded-2xl border p-5 flex items-center gap-4"
-      style={{
-        backgroundColor: accent ? 'var(--color-primary)' : 'var(--color-card)',
-        borderColor: accent ? 'transparent' : 'var(--color-border)',
-      }}
-    >
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-        style={{
-          backgroundColor: accent
-            ? 'color-mix(in srgb, #fff 15%, transparent)'
-            : 'var(--color-primary-subtle)',
-        }}
-      >
-        <span style={{ color: accent ? '#fff' : 'var(--color-primary)' }}>{icon}</span>
-      </div>
-      <div>
-        <p
-          className="text-2xl font-bold leading-none"
-          style={{ color: accent ? '#fff' : 'var(--color-foreground)' }}
-        >
-          {value}
-        </p>
-        <p
-          className="text-xs mt-1 font-medium"
-          style={{ color: accent ? 'rgba(255,255,255,0.75)' : 'var(--color-muted-foreground)' }}
-        >
-          {label}
-        </p>
+      <div className="flex gap-2 pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="flex-1 h-8 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+        <div className="flex-1 h-8 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+        <div className="w-9 h-8 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
       </div>
     </div>
   )
@@ -146,21 +126,19 @@ function StatCard({ label, value, icon, accent }: StatCardProps) {
 // ---------------------------------------------------------------------------
 export default function ManufacturerDashboard() {
   const router = useRouter()
-  const { user, isLoading: authLoading, logout } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const { manuals, isLoading, isError, deleteManual } = useManuals()
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
-  const [filter, setFilter] = useState<'all' | 'published' | 'draft' | 'processing'>('all')
 
-  const displayName: string = user?.user_metadata?.full_name ?? user?.email ?? ''
+  // Brand display name: try full_name → email → 'Manufacturer'
+  const displayName: string = (user?.user_metadata?.company_name ?? user?.user_metadata?.full_name ?? user?.email ?? 'Manufacturer') as string
   const initials = displayName
-    ? displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
-    : 'MF'
-
-  const published = manuals.filter(m => m.status === 'published').length
-  const drafts = manuals.filter(m => m.status === 'draft').length
-  const totalLanguages = new Set(manuals.flatMap(m => m.languages ?? [])).size
-
-  const filteredManuals = filter === 'all' ? manuals : manuals.filter(m => m.status === filter)
+    .split(/[\s@]/)
+    .filter(Boolean)
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || 'MF'
 
   const handleDeleteRequest = (id: string) => {
     const m = manuals.find(m => m.id === id)
@@ -173,117 +151,78 @@ export default function ManufacturerDashboard() {
     setPendingDelete(null)
   }
 
-  const FILTER_TABS = [
-    { key: 'all' as const, label: 'All' },
-    { key: 'published' as const, label: 'Published' },
-    { key: 'draft' as const, label: 'Drafts' },
-    { key: 'processing' as const, label: 'Processing' },
-  ]
-
   return (
     <>
       <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background-subtle)' }}>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <header
-          className="sticky top-0 z-20 border-b backdrop-blur-sm"
-          style={{ backgroundColor: 'color-mix(in srgb, var(--color-card) 95%, transparent)', borderColor: 'var(--color-border)' }}
+          className="border-b"
+          style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
         >
-          <div className="container flex items-center justify-between h-14">
-            <div className="flex items-center gap-6">
+          <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+            {/* Left: back + logo */}
+            <div className="flex items-center gap-4">
               <a
                 href="/"
-                className="flex items-center gap-2 text-base font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-                style={{ color: 'var(--color-primary)' }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)' }}
+                aria-label="Back to homepage"
               >
-                <BookOpen className="w-5 h-5" aria-hidden="true" />
-                ClearGuide
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </a>
-              <nav className="hidden md:flex items-center gap-1" aria-label="Dashboard navigation">
-                <a
-                  href="/manufacturer/dashboard"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                  style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-primary-subtle)' }}
-                  aria-current="page"
-                >
-                  <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
-                  Dashboard
-                </a>
-              </nav>
+              <ClearGuideLogo />
             </div>
 
+            {/* Right: brand name + initials avatar */}
             {!authLoading && (
               <div className="flex items-center gap-3">
-                <div className="hidden sm:flex items-center gap-2.5">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ring-2"
-                    style={{
-                      backgroundColor: 'var(--color-primary)',
-                      color: 'var(--color-primary-foreground)',
-                    }}
-                    aria-hidden="true"
-                  >
-                    {initials}
-                  </div>
-                  <span className="text-sm font-medium truncate max-w-[160px]" style={{ color: 'var(--color-foreground)' }}>
-                    {user?.email ?? 'Manufacturer'}
-                  </span>
-                </div>
-                <div className="w-px h-5" style={{ backgroundColor: 'var(--color-border)' }} aria-hidden="true" />
-                <button
-                  onClick={logout}
-                  className="btn-ghost flex items-center gap-1.5 text-xs py-1.5 px-2"
-                  aria-label="Sign out"
+                <span className="text-sm font-medium hidden sm:block" style={{ color: 'var(--color-foreground)' }}>
+                  {displayName}
+                </span>
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
+                  style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+                  aria-hidden="true"
                 >
-                  <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span className="hidden sm:inline">Sign out</span>
-                </button>
+                  {initials}
+                </div>
               </div>
             )}
           </div>
         </header>
 
         {/* ── Main ───────────────────────────────────────────────────────── */}
-        <main className="container py-10 space-y-8">
+        <main className="max-w-6xl mx-auto px-6 py-10" id="main-content">
 
           {/* Page title row */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>
-                Manufacturer Portal
-              </p>
               <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--color-foreground)' }}>
                 Your Manuals
               </h1>
               <p className="text-sm mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
-                Manage and publish digital product guides for your customers.
+                Manage and update your digital product guides.
               </p>
             </div>
             <button
               onClick={() => router.push('/manufacturer/new')}
-              className="btn-primary shrink-0 shadow-sm"
+              className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-sm"
+              style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
               aria-label="Create a new manual"
             >
               <Plus className="w-4 h-4" aria-hidden="true" />
-              New Manual
+              Create New Manual
             </button>
           </div>
-
-          {/* Stats row */}
-          {!isLoading && !isError && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard label="Total Manuals" value={manuals.length} icon={<FileText className="w-5 h-5" />} accent />
-              <StatCard label="Published" value={published} icon={<TrendingUp className="w-5 h-5" />} />
-              <StatCard label="Drafts" value={drafts} icon={<Clock className="w-5 h-5" />} />
-              <StatCard label="Languages Covered" value={totalLanguages || '—'} icon={<Globe className="w-5 h-5" />} />
-            </div>
-          )}
 
           {/* Error state */}
           {isError && (
             <div
               role="alert"
-              className="px-4 py-3 rounded-xl border text-sm flex items-center gap-2"
+              className="px-4 py-3 rounded-xl border text-sm flex items-center gap-2 mb-6"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--color-destructive) 8%, transparent)',
                 color: 'var(--color-destructive)',
@@ -292,37 +231,6 @@ export default function ManufacturerDashboard() {
             >
               <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
               Failed to load manuals. Please refresh the page.
-            </div>
-          )}
-
-          {/* Filter tabs + count */}
-          {!isLoading && !isError && manuals.length > 0 && (
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div
-                className="flex items-center gap-1 p-1 rounded-xl border"
-                style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
-                role="tablist"
-                aria-label="Filter manuals"
-              >
-                {FILTER_TABS.map(tab => (
-                  <button
-                    key={tab.key}
-                    role="tab"
-                    aria-selected={filter === tab.key}
-                    onClick={() => setFilter(tab.key)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    style={{
-                      backgroundColor: filter === tab.key ? 'var(--color-primary)' : 'transparent',
-                      color: filter === tab.key ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
-                Showing {filteredManuals.length} of {manuals.length} {manuals.length === 1 ? 'manual' : 'manuals'}
-              </p>
             </div>
           )}
 
@@ -345,7 +253,12 @@ export default function ManufacturerDashboard() {
                 className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
                 style={{ backgroundColor: 'var(--color-primary-subtle)' }}
               >
-                <FileText className="w-8 h-8" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+                  <rect x="4" y="3" width="12" height="16" rx="2" stroke="var(--color-primary)" strokeWidth="1.5" />
+                  <path d="M8 8h8M8 11h6M8 14h4" stroke="var(--color-primary)" strokeWidth="1.5" strokeLinecap="round" />
+                  <circle cx="20" cy="20" r="6" fill="var(--color-primary)" />
+                  <path d="M20 17v6M17 20h6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
               </div>
               <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--color-foreground)' }}>
                 No manuals yet
@@ -353,43 +266,28 @@ export default function ManufacturerDashboard() {
               <p className="text-sm mb-6 max-w-xs mx-auto" style={{ color: 'var(--color-muted-foreground)' }}>
                 Create your first accessible digital product manual and start engaging your customers.
               </p>
-              <button onClick={() => router.push('/manufacturer/new')} className="btn-primary">
+              <button
+                onClick={() => router.push('/manufacturer/new')}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+              >
                 <Plus className="w-4 h-4" aria-hidden="true" />
                 Create Your First Manual
               </button>
             </div>
           )}
 
-          {/* Filtered empty */}
-          {!isLoading && !isError && manuals.length > 0 && filteredManuals.length === 0 && (
-            <div
-              className="text-center py-16 rounded-2xl border"
-              style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
-            >
-              <p className="text-sm font-medium" style={{ color: 'var(--color-muted-foreground)' }}>
-                No {filter} manuals found.
-              </p>
-            </div>
-          )}
-
           {/* Manual grid */}
-          {!isLoading && !isError && filteredManuals.length > 0 && (
+          {!isLoading && !isError && manuals.length > 0 && (
             <section aria-label="Manual list">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredManuals.map((manual) => (
+                {manuals.map((manual) => (
                   <ManualCard key={manual.id} manual={manual} onDelete={handleDeleteRequest} />
                 ))}
               </div>
             </section>
           )}
         </main>
-
-        {/* Footer */}
-        <footer className="container pb-8 mt-4">
-          <p className="text-xs text-center" style={{ color: 'var(--color-muted-foreground)' }}>
-            ClearGuide &mdash; auto-refreshes every 30 seconds
-          </p>
-        </footer>
       </div>
 
       {pendingDelete && (
