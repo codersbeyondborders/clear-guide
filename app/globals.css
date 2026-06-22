@@ -169,17 +169,21 @@
     font-size: 0.875rem;
     font-weight: 600;
     border-radius: var(--radius);
-    background-color: var(--color-primary);
-    color: var(--color-primary-foreground);
-    border: none;
+    background-color: #09bc7c;
+    color: #FFFFFF;
+    border: 1px solid #09bc7c;
     cursor: pointer;
-    transition: background-color 150ms ease, box-shadow 150ms ease;
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
     white-space: nowrap;
   }
-  .btn-primary:hover:not(:disabled) { background-color: var(--color-primary-hover); }
-  .btn-primary:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+  .btn-primary:hover:not(:disabled) {
+    background-color: #FFFFFF;
+    color: #09bc7c;
+    border-color: #09bc7c;
+  }
+  .btn-primary:focus-visible { outline: 2px solid #09bc7c; outline-offset: 2px; }
 
-  /* Outline button */
+  /* Outline button (secondary) */
   .btn-outline {
     display: inline-flex;
     align-items: center;
@@ -189,19 +193,19 @@
     font-size: 0.875rem;
     font-weight: 600;
     border-radius: var(--radius);
-    background-color: transparent;
-    color: var(--color-foreground);
-    border: 1px solid var(--color-border-strong);
+    background-color: #FFFFFF;
+    color: #09bc7c;
+    border: 1px solid #09bc7c;
     cursor: pointer;
-    transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease;
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
     white-space: nowrap;
   }
   .btn-outline:hover:not(:disabled) {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-    background-color: var(--color-primary-subtle);
+    background-color: #09bc7c;
+    color: #FFFFFF;
+    border-color: #09bc7c;
   }
-  .btn-outline:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+  .btn-outline:focus-visible { outline: 2px solid #09bc7c; outline-offset: 2px; }
 
   /* Ghost button */
   .btn-ghost {
@@ -261,9 +265,27 @@
     border-radius: 9999px;
     border: 1px solid transparent;
   }
-  .badge-green  { background: var(--color-primary-subtle); color: var(--color-primary); border-color: color-mix(in srgb, var(--color-primary) 25%, transparent); }
+  .badge-green  { background: #ecfdf5; color: #09bc7c; border-color: transparent; }
   .badge-slate  { background: var(--color-background-subtle); color: var(--color-muted-foreground); border-color: var(--color-border); }
   .badge-red    { background: color-mix(in srgb, var(--color-destructive) 10%, transparent); color: var(--color-destructive); border-color: color-mix(in srgb, var(--color-destructive) 25%, transparent); }
+
+  /* Icon styling */
+  .icon-primary {
+    color: #09bc7c;
+    background-color: #ecfdf5;
+    padding: 0.5rem;
+    border-radius: var(--radius);
+  }
+
+  /* Label styling */
+  .label-primary {
+    color: #09bc7c;
+    background-color: #ecfdf5;
+    padding: 0.25rem 0.5rem;
+    border-radius: calc(var(--radius) / 2);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
 
   /* Footer links — dark background variant */
   .footer-link {
