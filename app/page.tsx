@@ -35,7 +35,7 @@ function Nav() {
 
         {/* Centre links */}
         <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-          {(['Features', 'Pricing', 'FAQ', 'About'] as const).map((label) => (
+          {(['Features', 'Pricing', 'Help', 'About'] as const).map((label) => (
             <a
               key={label}
               href={`#${label.toLowerCase()}`}

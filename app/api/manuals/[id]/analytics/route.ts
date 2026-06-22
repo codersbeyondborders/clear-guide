@@ -2,46 +2,11 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { readQuery } from '@/lib/db'
 
-const DB_READY = !!(process.env.PGHOST && process.env.AWS_ROLE_ARN)
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params
-
-  if (!DB_READY) {
-    // Rich mock data keyed by manual ID
-    const mockNames: Record<string, string> = {
-      'demo-qr-123': 'Smart Coffee Maker X1',
-      'demo-qr-456': 'Smart Toaster Pro',
-      'demo-qr-789': 'SonicBuds Wireless Earbuds',
-    }
-    return NextResponse.json({
-      manualName: mockNames[id] ?? 'Manual Analytics',
-      totalViews: 12_450,
-      activeUsers: 843,
-      avgTimeSpent: '4m 12s',
-      trendViews: 12,
-      trendUsers: -3,
-      viewsOverTime: [
-        { date: 'Mon', views: 1200 },
-        { date: 'Tue', views: 1900 },
-        { date: 'Wed', views: 1500 },
-        { date: 'Thu', views: 2200 },
-        { date: 'Fri', views: 2800 },
-        { date: 'Sat', views: 3100 },
-        { date: 'Sun', views: 2600 },
-      ],
-      topAIQueries: [
-        { query: 'How to descale?',       count: 450 },
-        { query: 'Filter replacement',    count: 320 },
-        { query: 'Error code E2',         count: 210 },
-        { query: 'Water not heating',     count: 180 },
-        { query: 'Timer setting',         count: 95 },
-      ],
-    })
-  }
 
   try {
     const supabase = await createClient()

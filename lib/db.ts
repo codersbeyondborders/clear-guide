@@ -1,41 +1,33 @@
 import { Pool, ClientBase } from 'pg'
 import { Signer } from '@aws-sdk/rds-signer'
-import { awsCredentialsProvider } from '@vercel/oidc-aws-credentials-provider'
+import { awsCredentialsProvider } from '@vercel/functions/oidc'
 import { attachDatabasePool } from '@vercel/functions'
 
-// ---------------------------------------------------------------------------
-// Auth strategy: prefer PGPASSWORD (direct) over OIDC (IAM).
-// OIDC requires a correctly configured Vercel ↔ AWS trust policy; until that
-// is confirmed working, PGPASSWORD is the reliable fallback.
-// ---------------------------------------------------------------------------
-const usePassword = !!process.env.PGPASSWORD
+// Aurora PostgreSQL integration env vars (AWS_APG_* prefix)
+const auroraHost   = process.env.AWS_APG_PGHOST!
+const auroraUser   = process.env.AWS_APG_PGUSER ?? 'postgres'
+const auroraDb     = process.env.AWS_APG_PGDATABASE ?? 'postgres'
+const auroraPort   = parseInt(process.env.AWS_APG_PGPORT ?? '5432', 10)
+const auroraRegion = process.env.AWS_APG_AWS_REGION!
+const auroraRole   = process.env.AWS_APG_AWS_ROLE_ARN!
 
-function getPassword(host: string): (() => Promise<string>) | string | undefined {
-  if (usePassword) return process.env.PGPASSWORD
-
-  const signer = new Signer({
-    credentials: awsCredentialsProvider({
-      roleArn: process.env.AWS_ROLE_ARN!,
-    }),
-    region: process.env.AWS_REGION!,
-    hostname: host,
-    username: process.env.PGUSER ?? 'postgres',
-    port: 5432,
-  })
-  return () => signer.getAuthToken()
-}
-
-// ---------------------------------------------------------------------------
-// Primary write pool
-// ---------------------------------------------------------------------------
-const writerHost = process.env.PGHOST ?? ''
+const signer = new Signer({
+  credentials: awsCredentialsProvider({
+    roleArn: auroraRole,
+    clientConfig: { region: auroraRegion },
+  }),
+  region: auroraRegion,
+  hostname: auroraHost,
+  username: auroraUser,
+  port: auroraPort,
+})
 
 export const pool = new Pool({
-  host: writerHost,
-  database: process.env.PGDATABASE ?? 'postgres',
-  port: 5432,
-  user: process.env.PGUSER ?? 'postgres',
-  password: getPassword(writerHost),
+  host: auroraHost,
+  database: auroraDb,
+  port: auroraPort,
+  user: auroraUser,
+  password: () => signer.getAuthToken(),
   ssl: { rejectUnauthorized: false },
   max: 20,
   idleTimeoutMillis: 30_000,
@@ -43,23 +35,8 @@ export const pool = new Pool({
 })
 attachDatabasePool(pool)
 
-// ---------------------------------------------------------------------------
-// Read replica pool — falls back to writer if PGHOST_READ is not set
-// ---------------------------------------------------------------------------
-const readerHost = process.env.PGHOST_READ ?? writerHost
-
-export const readPool = new Pool({
-  host: readerHost,
-  database: process.env.PGDATABASE ?? 'postgres',
-  port: 5432,
-  user: process.env.PGUSER ?? 'postgres',
-  password: getPassword(readerHost),
-  ssl: { rejectUnauthorized: false },
-  max: 10,
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
-})
-attachDatabasePool(readPool)
+// Read queries use the same pool (no separate replica configured)
+export const readPool = pool
 
 // ---------------------------------------------------------------------------
 // Helpers
