@@ -32,7 +32,7 @@ export async function uploadManualFile(
   const pathname = `manuals/${userId}/${manualId}/${sanitized}`
 
   const blob = await put(pathname, file, {
-    access: 'private',
+    access: 'public',
     addRandomSuffix: false,
     contentType: getContentType(filename),
   })
@@ -57,7 +57,7 @@ export async function uploadThumbnail(
   const pathname = `thumbnails/${userId}/${manualId}/${sanitized}`
 
   const blob = await put(pathname, file, {
-    access: 'private',
+    access: 'public',
     addRandomSuffix: false,
   })
 
@@ -79,7 +79,7 @@ export async function uploadSectionAsset(
   const pathname = `sections/${userId}/${manualId}/${sectionId}/${sanitized}`
 
   const blob = await put(pathname, file, {
-    access: 'private',
+    access: 'public',
     addRandomSuffix: true,
   })
 

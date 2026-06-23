@@ -2,11 +2,12 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Globe, Trash2, Plus, Upload, Video, Image as ImageIcon, Check, ChevronDown } from 'lucide-react'
+import { Globe, Trash2, Plus, Upload, Video, Image as ImageIcon, Check, ChevronDown, FileText, LayoutList, X } from 'lucide-react'
 import { ManualEditorProvider, useEditor } from '@/context/ManualEditorContext'
 import { SUPPORTED_LANGUAGES } from '@/components/LanguagePicker'
 import { AIProcessingOverlay } from '@/components/AIProcessingOverlay'
 import { ManualDoneCard } from '@/components/ManualDoneCard'
+import { FileUpload } from '@/components/SectionBuilder'
 
 // ---------------------------------------------------------------------------
 // ClearGuide logo
@@ -204,6 +205,9 @@ function ManualEditor() {
   const [sections, setSections] = useState<SectionData[]>([
     { id: generateId(), title: '', content: '' },
   ])
+  const [uploadMethod, setUploadMethod] = useState<'sections' | 'upload' | null>(null)
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
+  const [uploadedFilePathname, setUploadedFilePathname] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [done, setDone] = useState(false)
   const [savedManualId, setSavedManualId] = useState<string | null>(null)
@@ -232,6 +236,14 @@ function ManualEditor() {
       setError('Product Name is required.')
       return
     }
+    if (!uploadMethod) {
+      setError('Please choose an upload method (sections or upload a document).')
+      return
+    }
+    if (uploadMethod === 'upload' && !uploadedFilePathname) {
+      setError('Please upload a document before saving.')
+      return
+    }
     setError('')
     setProcessing(true)
     try {
@@ -242,14 +254,17 @@ function ManualEditor() {
         serialNumber: formData.serialNumber || null,
         languages: selectedLangs,
         status,
-        uploadMethod: 'sections',
-        sections: sections.map((s, i) => ({
-          id: s.id,
-          title: s.title || `Section ${i + 1}`,
-          content: s.content,
-          imageUrls: [],
-          videoUrls: [],
-        })),
+        uploadMethod,
+        originalFileUrl: uploadMethod === 'upload' ? uploadedFilePathname : null,
+        sections: uploadMethod === 'sections'
+          ? sections.map((s, i) => ({
+              id: s.id,
+              title: s.title || `Section ${i + 1}`,
+              content: s.content,
+              imageUrls: [],
+              videoUrls: [],
+            }))
+          : [],
       }
       const res = await fetch('/api/manuals', {
         method: 'POST',
@@ -492,49 +507,124 @@ function ManualEditor() {
           </div>
         </div>
 
-        {/* ── Manual Sections ───────────────────────────────────────── */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-base font-bold" style={{ color: 'var(--color-foreground)' }}>
-                Manual Sections
-              </h2>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted-foreground)' }}>
-                Build your manual section by section.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
+        {/* ── Content Method ────────────────────────────────────────── */}
+        <div
+          className="rounded-2xl border p-6"
+          style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-base font-bold" style={{ color: 'var(--color-foreground)' }}>
+              Manual Content
+            </h2>
+            {uploadMethod && (
               <button
                 type="button"
-                className="text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-                style={{ color: 'var(--color-primary)' }}
-                onClick={() => {/* future: change method */}}
+                onClick={() => {
+                  setUploadMethod(null)
+                  setUploadedFileName(null)
+                  setUploadedFilePathname(null)
+                }}
+                className="flex items-center gap-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                style={{ color: 'var(--color-muted-foreground)' }}
               >
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
                 Change method
               </button>
-              <button
-                type="button"
-                onClick={addSection}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
-              >
-                <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-                Add Section
-              </button>
-            </div>
+            )}
           </div>
+          <p className="text-xs mb-5" style={{ color: 'var(--color-muted-foreground)' }}>
+            Upload an existing document or build your manual section by section.
+          </p>
 
-          <div className="space-y-4">
-            {sections.map((section, idx) => (
-              <SectionCard
-                key={section.id}
-                section={section}
-                index={idx}
-                onUpdate={s => updateSection(idx, s)}
-                onDelete={() => deleteSection(idx)}
-              />
-            ))}
-          </div>
+          {/* Method picker */}
+          {!uploadMethod && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                {
+                  key: 'upload' as const,
+                  title: 'Upload Document',
+                  desc: 'Upload an existing PDF or Word file. Content is extracted automatically.',
+                  Icon: FileText,
+                },
+                {
+                  key: 'sections' as const,
+                  title: 'Build Sections',
+                  desc: 'Write your manual step-by-step with titles and rich text per section.',
+                  Icon: LayoutList,
+                },
+              ].map(({ key, title, desc, Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setUploadMethod(key)}
+                  className="flex flex-col gap-3 p-5 rounded-xl border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:border-primary"
+                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-subtle)' }}
+                >
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--color-primary-subtle)' }}
+                    aria-hidden="true"
+                  >
+                    <Icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>
+                      {title}
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                      {desc}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Upload method */}
+          {uploadMethod === 'upload' && (
+            <FileUpload
+              onFile={(name, _size, pathname) => {
+                setUploadedFileName(name)
+                setUploadedFilePathname(pathname ?? null)
+              }}
+              currentFileName={uploadedFileName}
+              onClear={() => {
+                setUploadedFileName(null)
+                setUploadedFilePathname(null)
+              }}
+            />
+          )}
+
+          {/* Sections method */}
+          {uploadMethod === 'sections' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-muted-foreground)' }}>
+                  {sections.length} {sections.length === 1 ? 'section' : 'sections'}
+                </p>
+                <button
+                  type="button"
+                  onClick={addSection}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+                >
+                  <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                  Add Section
+                </button>
+              </div>
+              <div className="space-y-4">
+                {sections.map((section, idx) => (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    index={idx}
+                    onUpdate={s => updateSection(idx, s)}
+                    onDelete={() => deleteSection(idx)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bottom save row */}
