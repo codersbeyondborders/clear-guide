@@ -55,6 +55,34 @@ export interface Manual {
 export interface ManualListItem
   extends Pick<Manual, 'id' | 'productName' | 'productModel' | 'brand' | 'status' | 'languages' | 'coverImage' | 'createdAt' | 'updatedAt'> {
   sectionCount: number
+  /** Total view events from the analytics table */
+  viewCount: number
+  /** Average time spent per view session, in seconds */
+  avgTimeSeconds: number
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard-level analytics
+// ---------------------------------------------------------------------------
+export interface DashboardKPI {
+  totalManuals: number
+  publishedManuals: number
+  totalViews: number
+  activeUsers: number
+}
+
+export interface ActivityEvent {
+  id: string
+  manualName: string
+  manualId: string
+  mode: ViewMode
+  timeSpentSeconds: number
+  viewedAt: string
+}
+
+export interface DashboardAnalytics {
+  kpi: DashboardKPI
+  recentActivity: ActivityEvent[]
 }
 
 // ---------------------------------------------------------------------------

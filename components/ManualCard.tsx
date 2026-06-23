@@ -1,14 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Settings, BarChart2, Trash2 } from 'lucide-react'
+import { FileText, Settings, BarChart2, Trash2, Share2, Check, Eye, Clock } from 'lucide-react'
+import Image from 'next/image'
 import type { ManualListItem } from '@/lib/types'
 
-interface ManualCardProps {
-  manual: ManualListItem
-  onDelete: (id: string) => void
-}
-
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 function formatDate(dateStr: string) {
   const d = new Date(dateStr)
   const dd = String(d.getDate()).padStart(2, '0')
@@ -17,51 +17,186 @@ function formatDate(dateStr: string) {
   return `${dd}/${mm}/${yyyy}`
 }
 
+function formatSeconds(s: number): string {
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  return `${m}m ${String(s % 60).padStart(2, '0')}s`
+}
+
+function formatCount(n: number): string {
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return String(n)
+}
+
+const STATUS_CONFIG = {
+  published: { label: 'Published', bg: 'var(--color-primary-subtle)', color: 'var(--color-primary)' },
+  draft:     { label: 'Draft',     bg: 'color-mix(in srgb, #d97706 10%, transparent)', color: '#d97706' },
+  processing:{ label: 'Processing',bg: 'color-mix(in srgb, #0284c7 10%, transparent)', color: '#0284c7' },
+  archived:  { label: 'Archived',  bg: 'var(--color-background-subtle)', color: 'var(--color-muted-foreground)' },
+}
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  en: 'EN', es: 'ES', fr: 'FR', de: 'DE', it: 'IT',
+  pt: 'PT', ja: 'JA', zh: 'ZH', ar: 'AR', ko: 'KO',
+}
+
+// ---------------------------------------------------------------------------
+// Cover thumbnail
+// ---------------------------------------------------------------------------
+function CoverThumbnail({ coverImage, productName }: { coverImage: string | null; productName: string }) {
+  if (coverImage) {
+    return (
+      <div className="relative w-full h-36 overflow-hidden rounded-t-2xl bg-slate-100">
+        <Image
+          src={coverImage}
+          alt={`Cover image for ${productName}`}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover"
+          crossOrigin="anonymous"
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="w-full h-36 rounded-t-2xl flex items-center justify-center"
+      style={{ backgroundColor: 'var(--color-primary-subtle)' }}
+      aria-hidden="true"
+    >
+      <FileText className="w-10 h-10 opacity-40" style={{ color: 'var(--color-primary)' }} />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+interface ManualCardProps {
+  manual: ManualListItem
+  onDelete: (id: string) => void
+}
+
+// ---------------------------------------------------------------------------
+// Card
+// ---------------------------------------------------------------------------
 export function ManualCard({ manual, onDelete }: ManualCardProps) {
   const router = useRouter()
+  const [copied, setCopied] = useState(false)
 
-  const isPublished = manual.status === 'published'
-  const isDraft = manual.status === 'draft'
+  const statusCfg = STATUS_CONFIG[manual.status] ?? STATUS_CONFIG.draft
+  const publicUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/manual/${manual.id}`
+    : `/manual/${manual.id}`
 
-  const statusLabel = isPublished ? 'Published' : isDraft ? 'Draft' : manual.status.charAt(0).toUpperCase() + manual.status.slice(1)
-  const statusColor = isPublished
-    ? 'var(--color-primary)'
-    : isDraft
-    ? '#f59e0b'
-    : 'var(--color-muted-foreground)'
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(publicUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback: do nothing silently
+    }
+  }
+
+  const visibleLangs = (manual.languages ?? []).slice(0, 3)
+  const extraLangs = (manual.languages ?? []).length - 3
 
   return (
     <article
-      className="group rounded-2xl border flex flex-col transition-all duration-200 hover:shadow-md"
+      className="group rounded-2xl border flex flex-col transition-all duration-200 hover:shadow-md overflow-hidden"
       style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
     >
-      <div className="p-5 flex flex-col flex-1 gap-4">
+      {/* Cover */}
+      <div className="relative shrink-0">
+        <CoverThumbnail coverImage={manual.coverImage} productName={manual.productName} />
+        {/* Status badge — overlaid top-right */}
+        <span
+          className="absolute top-2.5 right-2.5 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+          style={{ backgroundColor: statusCfg.bg, color: statusCfg.color }}
+        >
+          {statusCfg.label}
+        </span>
+      </div>
 
-        {/* Top row: icon + status */}
-        <div className="flex items-start justify-between">
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: 'var(--color-primary-subtle)' }}
-          >
-            <FileText className="w-5 h-5" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
-          </div>
-          <span
-            className="text-xs font-semibold"
-            style={{ color: statusColor }}
-          >
-            {statusLabel}
-          </span>
-        </div>
+      {/* Body */}
+      <div className="flex flex-col flex-1 p-4 gap-3">
 
-        {/* Product name + date */}
-        <div className="space-y-1 flex-1">
-          <h3 className="text-sm font-bold leading-snug" style={{ color: 'var(--color-foreground)' }}>
+        {/* Title + date */}
+        <div className="space-y-0.5">
+          <h3
+            className="text-sm font-bold leading-snug line-clamp-2 text-balance"
+            style={{ color: 'var(--color-foreground)' }}
+          >
             {manual.productName}
           </h3>
+          {manual.productModel && (
+            <p className="text-xs truncate" style={{ color: 'var(--color-muted-foreground)' }}>
+              {manual.productModel}
+            </p>
+          )}
           <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
-            Last updated: {formatDate(manual.updatedAt)}
+            Updated {formatDate(manual.updatedAt)}
           </p>
         </div>
+
+        {/* Inline stats */}
+        <div className="flex items-center gap-3">
+          <span
+            className="flex items-center gap-1 text-xs"
+            style={{ color: 'var(--color-muted-foreground)' }}
+            title={`${manual.viewCount} total views`}
+          >
+            <Eye className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+            {formatCount(manual.viewCount)} views
+          </span>
+          {manual.avgTimeSeconds > 0 && (
+            <span
+              className="flex items-center gap-1 text-xs"
+              style={{ color: 'var(--color-muted-foreground)' }}
+              title={`Avg. time: ${formatSeconds(manual.avgTimeSeconds)}`}
+            >
+              <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              {formatSeconds(manual.avgTimeSeconds)} avg
+            </span>
+          )}
+        </div>
+
+        {/* Language chips */}
+        {visibleLangs.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {visibleLangs.map((lang) => (
+              <span
+                key={lang}
+                className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                style={{
+                  backgroundColor: 'var(--color-background-subtle)',
+                  color: 'var(--color-muted-foreground)',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                {LANGUAGE_LABELS[lang] ?? lang.toUpperCase()}
+              </span>
+            ))}
+            {extraLangs > 0 && (
+              <span
+                className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                style={{
+                  backgroundColor: 'var(--color-background-subtle)',
+                  color: 'var(--color-muted-foreground)',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                +{extraLangs}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Spacer */}
+        <div className="flex-1" />
 
         {/* Action buttons */}
         <div
@@ -70,34 +205,79 @@ export function ManualCard({ manual, onDelete }: ManualCardProps) {
         >
           <button
             onClick={() => router.push(`/manufacturer/edit/${manual.id}`)}
-            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 px-3 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:border-primary hover:text-primary"
+            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 px-3 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             style={{
               borderColor: 'var(--color-border)',
               color: 'var(--color-foreground)',
               backgroundColor: 'var(--color-card)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = 'var(--color-primary)'
+              e.currentTarget.style.color = 'var(--color-primary)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'var(--color-border)'
+              e.currentTarget.style.color = 'var(--color-foreground)'
             }}
             aria-label={`Edit ${manual.productName}`}
           >
             <Settings className="w-3.5 h-3.5" aria-hidden="true" />
             Edit
           </button>
+
           <button
             onClick={() => router.push(`/manufacturer/analytics/${manual.id}`)}
-            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 px-3 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:border-primary hover:text-primary"
+            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 px-3 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             style={{
               borderColor: 'var(--color-border)',
               color: 'var(--color-foreground)',
               backgroundColor: 'var(--color-card)',
             }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = 'var(--color-primary)'
+              e.currentTarget.style.color = 'var(--color-primary)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'var(--color-border)'
+              e.currentTarget.style.color = 'var(--color-foreground)'
+            }}
             aria-label={`View analytics for ${manual.productName}`}
           >
             <BarChart2 className="w-3.5 h-3.5" aria-hidden="true" />
-            Analytics
+            Stats
           </button>
+
+          {/* Share / copy link */}
+          <button
+            onClick={handleShare}
+            className="w-9 h-9 flex items-center justify-center rounded-full border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring relative"
+            style={{
+              borderColor: copied ? 'var(--color-primary)' : 'var(--color-border)',
+              color: copied ? 'var(--color-primary)' : 'var(--color-muted-foreground)',
+              backgroundColor: copied ? 'var(--color-primary-subtle)' : 'var(--color-card)',
+            }}
+            aria-label={copied ? 'Link copied!' : `Copy public link for ${manual.productName}`}
+            title={copied ? 'Copied!' : 'Copy public link'}
+          >
+            {copied
+              ? <Check className="w-3.5 h-3.5" aria-hidden="true" />
+              : <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
+            }
+          </button>
+
+          {/* Delete */}
           <button
             onClick={() => onDelete(manual.id)}
             className="w-9 h-9 flex items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)', backgroundColor: 'var(--color-card)' }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-destructive) 40%, transparent)'
+              e.currentTarget.style.color = 'var(--color-destructive)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'var(--color-border)'
+              e.currentTarget.style.color = 'var(--color-muted-foreground)'
+            }}
             aria-label={`Delete ${manual.productName}`}
           >
             <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
