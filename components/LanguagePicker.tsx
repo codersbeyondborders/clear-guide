@@ -78,7 +78,7 @@ export function LanguagePicker({ selected, onChange }: LanguagePickerProps) {
 
       {/* Language grid */}
       <div
-        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+        className="grid grid-cols-2 sm:grid-cols-3 gap-3"
         role="group"
         aria-label="Select languages"
       >

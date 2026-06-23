@@ -1,41 +1,84 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useId } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, AlertTriangle } from 'lucide-react'
+import { Plus, AlertTriangle, Search, X, ChevronDown } from 'lucide-react'
 import { ManualCard } from '@/components/ManualCard'
+import { DashboardShell } from '@/components/dashboard/DashboardShell'
+import { KPISummaryBar } from '@/components/dashboard/KPISummaryBar'
+import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { useManuals } from '@/hooks/useManuals'
 import { useAuth } from '@/hooks/useAuth'
-import Image from 'next/image'
+import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics'
+import type { ManualListItem, ManualStatus } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
-// ClearGuide logo SVG (inline, matches brand)
+// Types
 // ---------------------------------------------------------------------------
-function ClearGuideLogo() {
-  return (
-    <a href="/" className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded" aria-label="ClearGuide home">
-      <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center"
-        style={{ backgroundColor: 'var(--color-primary)' }}
-        aria-hidden="true"
-      >
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <rect x="2" y="2" width="6" height="7" rx="1" fill="white" opacity="0.9" />
-          <rect x="10" y="2" width="6" height="4" rx="1" fill="white" opacity="0.7" />
-          <rect x="2" y="11" width="14" height="2" rx="1" fill="white" opacity="0.9" />
-          <rect x="2" y="14" width="10" height="2" rx="1" fill="white" opacity="0.6" />
-        </svg>
-      </div>
-      <div className="leading-none">
-        <span className="block text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>Clear</span>
-        <span className="block text-sm font-bold" style={{ color: 'var(--color-primary)' }}>Guide</span>
-      </div>
-    </a>
-  )
+type SortKey = 'newest' | 'oldest' | 'name-asc' | 'most-viewed'
+type StatusFilter = 'all' | ManualStatus
+
+const STATUS_TABS: { key: StatusFilter; label: string }[] = [
+  { key: 'all',        label: 'All'        },
+  { key: 'published',  label: 'Published'  },
+  { key: 'draft',      label: 'Draft'      },
+  { key: 'processing', label: 'Processing' },
+]
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'newest',     label: 'Newest first'   },
+  { key: 'oldest',     label: 'Oldest first'   },
+  { key: 'name-asc',   label: 'Name A–Z'       },
+  { key: 'most-viewed',label: 'Most viewed'    },
+]
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function filterAndSort(
+  manuals: ManualListItem[],
+  query: string,
+  status: StatusFilter,
+  sort: SortKey,
+): ManualListItem[] {
+  let list = [...manuals]
+
+  // Status filter
+  if (status !== 'all') {
+    list = list.filter((m) => m.status === status)
+  }
+
+  // Search filter (name, model, brand)
+  if (query.trim()) {
+    const q = query.toLowerCase()
+    list = list.filter(
+      (m) =>
+        m.productName.toLowerCase().includes(q) ||
+        (m.productModel ?? '').toLowerCase().includes(q) ||
+        (m.brand ?? '').toLowerCase().includes(q),
+    )
+  }
+
+  // Sort
+  switch (sort) {
+    case 'oldest':
+      list.sort((a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime())
+      break
+    case 'name-asc':
+      list.sort((a, b) => a.productName.localeCompare(b.productName))
+      break
+    case 'most-viewed':
+      list.sort((a, b) => b.viewCount - a.viewCount)
+      break
+    default: // newest
+      list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  }
+
+  return list
 }
 
 // ---------------------------------------------------------------------------
-// Delete confirmation modal
+// Delete modal
 // ---------------------------------------------------------------------------
 function DeleteModal({ manualName, onConfirm, onCancel }: {
   manualName: string
@@ -51,7 +94,7 @@ function DeleteModal({ manualName, onConfirm, onCancel }: {
     >
       <div
         className="absolute inset-0"
-        style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+        style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
         onClick={onCancel}
         aria-hidden="true"
       />
@@ -101,21 +144,26 @@ function DeleteModal({ manualName, onConfirm, onCancel }: {
 function ManualCardSkeleton() {
   return (
     <div
-      className="rounded-2xl border p-5 space-y-4 animate-pulse"
+      className="rounded-2xl border flex flex-col overflow-hidden animate-pulse"
       style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
     >
-      <div className="flex items-start justify-between">
-        <div className="w-11 h-11 rounded-xl" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-        <div className="w-16 h-4 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-      </div>
-      <div className="space-y-2">
-        <div className="h-4 w-3/4 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-        <div className="h-3 w-1/2 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-      </div>
-      <div className="flex gap-2 pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
-        <div className="flex-1 h-8 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-        <div className="flex-1 h-8 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
-        <div className="w-9 h-8 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+      {/* thumbnail */}
+      <div className="w-full h-36" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+      <div className="p-4 space-y-3">
+        <div className="space-y-1.5">
+          <div className="h-4 w-3/4 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+          <div className="h-3 w-1/2 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-3 w-16 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+          <div className="h-3 w-16 rounded" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+        </div>
+        <div className="flex gap-2 pt-2 border-t" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="flex-1 h-8 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+          <div className="flex-1 h-8 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+          <div className="w-9 h-8 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+          <div className="w-9 h-8 rounded-full" style={{ backgroundColor: 'var(--color-background-subtle)' }} />
+        </div>
       </div>
     </div>
   )
@@ -126,12 +174,27 @@ function ManualCardSkeleton() {
 // ---------------------------------------------------------------------------
 export default function ManufacturerDashboard() {
   const router = useRouter()
-  const { user, isLoading: authLoading } = useAuth()
-  const { manuals, isLoading, isError, deleteManual } = useManuals()
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
+  const searchId = useId()
+  const sortId = useId()
 
-  // Brand display name: try full_name → email → 'Manufacturer'
-  const displayName: string = (user?.user_metadata?.company_name ?? user?.user_metadata?.full_name ?? user?.email ?? 'Manufacturer') as string
+  const { user, isLoading: authLoading, logout } = useAuth()
+  const { manuals, isLoading: manualsLoading, isError: manualsError, deleteManual } = useManuals()
+  const { kpi, recentActivity, isLoading: analyticsLoading, isError: analyticsError } = useDashboardAnalytics()
+
+  // ── Local UI state ────────────────────────────────────────────────────────
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [sortKey, setSortKey] = useState<SortKey>('newest')
+
+  // ── Derived display name ──────────────────────────────────────────────────
+  const displayName: string = (
+    user?.user_metadata?.company_name ??
+    user?.user_metadata?.full_name ??
+    user?.email ??
+    'Manufacturer'
+  ) as string
+
   const initials = displayName
     .split(/[\s@]/)
     .filter(Boolean)
@@ -140,8 +203,25 @@ export default function ManufacturerDashboard() {
     .toUpperCase()
     .slice(0, 2) || 'MF'
 
+  // ── Filtered + sorted manuals ─────────────────────────────────────────────
+  const filteredManuals = useMemo(
+    () => filterAndSort(manuals, searchQuery, statusFilter, sortKey),
+    [manuals, searchQuery, statusFilter, sortKey],
+  )
+
+  // ── Tab counts ────────────────────────────────────────────────────────────
+  const tabCounts = useMemo(() => {
+    return {
+      all: manuals.length,
+      published: manuals.filter((m) => m.status === 'published').length,
+      draft: manuals.filter((m) => m.status === 'draft').length,
+      processing: manuals.filter((m) => m.status === 'processing').length,
+    }
+  }, [manuals])
+
+  // ── Delete handlers ───────────────────────────────────────────────────────
   const handleDeleteRequest = (id: string) => {
-    const m = manuals.find(m => m.id === id)
+    const m = manuals.find((m) => m.id === id)
     if (m) setPendingDelete({ id, name: m.productName })
   }
 
@@ -151,145 +231,276 @@ export default function ManufacturerDashboard() {
     setPendingDelete(null)
   }
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background-subtle)' }}>
+      <DashboardShell
+        displayName={displayName}
+        initials={initials}
+        onLogout={logout}
+      >
+        {/* ── Page header ────────────────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-7">
+          <div>
+            <h1
+              className="text-2xl sm:text-3xl font-bold tracking-tight text-balance"
+              style={{ color: 'var(--color-foreground)' }}
+            >
+              {authLoading ? 'Dashboard' : `Welcome back${user ? `, ${displayName.split(/[\s@]/)[0]}` : ''}`}
+            </h1>
+            <p className="text-sm mt-1 text-pretty" style={{ color: 'var(--color-muted-foreground)' }}>
+              Manage and monitor all your digital product manuals.
+            </p>
+          </div>
+          <button
+            onClick={() => router.push('/manufacturer/new')}
+            className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-sm"
+            style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+            aria-label="Create a new manual"
+          >
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            Create Manual
+          </button>
+        </div>
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <header
-          className="border-b"
-          style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
-        >
-          <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-            {/* Left: back + logo */}
-            <div className="flex items-center gap-4">
-              <a
-                href="/"
-                className="w-8 h-8 flex items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)' }}
-                aria-label="Back to homepage"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </a>
-              <ClearGuideLogo />
+        {/* ── KPI bar ────────────────────────────────────────────────────── */}
+        <div className="mb-7">
+          <KPISummaryBar
+            kpi={kpi}
+            isLoading={analyticsLoading}
+          />
+          {analyticsError && (
+            <p
+              className="text-xs mt-2 flex items-center gap-1.5"
+              style={{ color: 'var(--color-destructive)' }}
+              role="alert"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              Could not load analytics summary.
+            </p>
+          )}
+        </div>
+
+        {/* ── Main content: grid + activity feed ─────────────────────────── */}
+        <div className="flex flex-col xl:flex-row gap-6">
+
+          {/* Left: manuals grid */}
+          <div className="flex-1 min-w-0">
+
+            {/* Search + Sort row */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              {/* Search input */}
+              <div className="relative flex-1">
+                <label htmlFor={searchId} className="sr-only">Search manuals</label>
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                  style={{ color: 'var(--color-muted-foreground)' }}
+                  aria-hidden="true"
+                />
+                <input
+                  id={searchId}
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, model or brand…"
+                  className="w-full pl-9 pr-9 py-2 text-sm rounded-xl border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  style={{
+                    backgroundColor: 'var(--color-card)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-foreground)',
+                  }}
+                  aria-live="polite"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    style={{ color: 'var(--color-muted-foreground)' }}
+                    aria-label="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+
+              {/* Sort dropdown */}
+              <div className="relative">
+                <label htmlFor={sortId} className="sr-only">Sort manuals</label>
+                <select
+                  id={sortId}
+                  value={sortKey}
+                  onChange={(e) => setSortKey(e.target.value as SortKey)}
+                  className="appearance-none pl-3 pr-8 py-2 text-sm rounded-xl border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--color-card)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-foreground)',
+                    minWidth: '148px',
+                  }}
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.key} value={opt.key}>{opt.label}</option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
+                  style={{ color: 'var(--color-muted-foreground)' }}
+                  aria-hidden="true"
+                />
+              </div>
             </div>
 
-            {/* Right: brand name + initials avatar */}
-            {!authLoading && (
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium hidden sm:block" style={{ color: 'var(--color-foreground)' }}>
-                  {displayName}
-                </span>
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
-                  style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
-                  aria-hidden="true"
-                >
-                  {initials}
-                </div>
+            {/* Status tabs */}
+            <div
+              className="flex items-center gap-1 mb-5 p-1 rounded-xl border w-fit flex-wrap"
+              style={{ backgroundColor: 'var(--color-background-subtle)', borderColor: 'var(--color-border)' }}
+              role="tablist"
+              aria-label="Filter by status"
+            >
+              {STATUS_TABS.map(({ key, label }) => {
+                const isActive = statusFilter === key
+                const count = tabCounts[key]
+                return (
+                  <button
+                    key={key}
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setStatusFilter(key)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    style={{
+                      backgroundColor: isActive ? 'var(--color-card)' : 'transparent',
+                      color: isActive ? 'var(--color-foreground)' : 'var(--color-muted-foreground)',
+                      boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                    }}
+                  >
+                    {label}
+                    {!manualsLoading && (
+                      <span
+                        className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold"
+                        style={{
+                          backgroundColor: isActive ? 'var(--color-primary-subtle)' : 'var(--color-border)',
+                          color: isActive ? 'var(--color-primary)' : 'var(--color-muted-foreground)',
+                        }}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Error state */}
+            {manualsError && (
+              <div
+                role="alert"
+                className="px-4 py-3 rounded-xl border text-sm flex items-center gap-2 mb-5"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--color-destructive) 8%, transparent)',
+                  color: 'var(--color-destructive)',
+                  borderColor: 'color-mix(in srgb, var(--color-destructive) 20%, transparent)',
+                }}
+              >
+                <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                Failed to load manuals. Please refresh the page.
               </div>
             )}
-          </div>
-        </header>
 
-        {/* ── Main ───────────────────────────────────────────────────────── */}
-        <main className="max-w-6xl mx-auto px-6 py-10" id="main-content">
+            {/* Loading skeletons */}
+            {manualsLoading && (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3 gap-5" aria-busy="true" aria-label="Loading manuals">
+                {Array.from({ length: 6 }).map((_, i) => <ManualCardSkeleton key={i} />)}
+              </div>
+            )}
 
-          {/* Page title row */}
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--color-foreground)' }}>
-                Your Manuals
-              </h1>
-              <p className="text-sm mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
-                Manage and update your digital product guides.
-              </p>
-            </div>
-            <button
-              onClick={() => router.push('/manufacturer/new')}
-              className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-sm"
-              style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
-              aria-label="Create a new manual"
-            >
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              Create New Manual
-            </button>
-          </div>
-
-          {/* Error state */}
-          {isError && (
-            <div
-              role="alert"
-              className="px-4 py-3 rounded-xl border text-sm flex items-center gap-2 mb-6"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--color-destructive) 8%, transparent)',
-                color: 'var(--color-destructive)',
-                borderColor: 'color-mix(in srgb, var(--color-destructive) 20%, transparent)',
-              }}
-            >
-              <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
-              Failed to load manuals. Please refresh the page.
-            </div>
-          )}
-
-          {/* Loading skeletons */}
-          {isLoading && (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5" aria-busy="true" aria-label="Loading manuals">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <ManualCardSkeleton key={i} />
-              ))}
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!isLoading && !isError && manuals.length === 0 && (
-            <div
-              className="text-center py-24 rounded-2xl border"
-              style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
-            >
+            {/* Empty — no manuals at all */}
+            {!manualsLoading && !manualsError && manuals.length === 0 && (
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
-                style={{ backgroundColor: 'var(--color-primary-subtle)' }}
+                className="text-center py-20 rounded-2xl border"
+                style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
               >
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-                  <rect x="4" y="3" width="12" height="16" rx="2" stroke="var(--color-primary)" strokeWidth="1.5" />
-                  <path d="M8 8h8M8 11h6M8 14h4" stroke="var(--color-primary)" strokeWidth="1.5" strokeLinecap="round" />
-                  <circle cx="20" cy="20" r="6" fill="var(--color-primary)" />
-                  <path d="M20 17v6M17 20h6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ backgroundColor: 'var(--color-primary-subtle)' }}
+                  aria-hidden="true"
+                >
+                  <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+                    <rect x="4" y="3" width="12" height="16" rx="2" stroke="var(--color-primary)" strokeWidth="1.5" />
+                    <path d="M8 8h8M8 11h6M8 14h4" stroke="var(--color-primary)" strokeWidth="1.5" strokeLinecap="round" />
+                    <circle cx="20" cy="20" r="6" fill="var(--color-primary)" />
+                    <path d="M20 17v6M17 20h6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <h2 className="text-base font-bold mb-2" style={{ color: 'var(--color-foreground)' }}>
+                  No manuals yet
+                </h2>
+                <p className="text-sm mb-6 max-w-xs mx-auto text-pretty" style={{ color: 'var(--color-muted-foreground)' }}>
+                  Create your first accessible digital product manual and start engaging your customers.
+                </p>
+                <button
+                  onClick={() => router.push('/manufacturer/new')}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+                >
+                  <Plus className="w-4 h-4" aria-hidden="true" />
+                  Create Your First Manual
+                </button>
               </div>
-              <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--color-foreground)' }}>
-                No manuals yet
-              </h2>
-              <p className="text-sm mb-6 max-w-xs mx-auto" style={{ color: 'var(--color-muted-foreground)' }}>
-                Create your first accessible digital product manual and start engaging your customers.
-              </p>
-              <button
-                onClick={() => router.push('/manufacturer/new')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+            )}
+
+            {/* Empty search/filter result */}
+            {!manualsLoading && !manualsError && manuals.length > 0 && filteredManuals.length === 0 && (
+              <div
+                className="text-center py-14 rounded-2xl border"
+                style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
               >
-                <Plus className="w-4 h-4" aria-hidden="true" />
-                Create Your First Manual
-              </button>
-            </div>
-          )}
-
-          {/* Manual grid */}
-          {!isLoading && !isError && manuals.length > 0 && (
-            <section aria-label="Manual list">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {manuals.map((manual) => (
-                  <ManualCard key={manual.id} manual={manual} onDelete={handleDeleteRequest} />
-                ))}
+                <Search className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--color-border)' }} aria-hidden="true" />
+                <p className="text-sm font-semibold mb-1" style={{ color: 'var(--color-foreground)' }}>
+                  No manuals match your filters
+                </p>
+                <p className="text-xs mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
+                  Try a different search term or status filter.
+                </p>
+                <button
+                  onClick={() => { setSearchQuery(''); setStatusFilter('all') }}
+                  className="text-xs font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                  style={{ color: 'var(--color-primary)' }}
+                >
+                  Clear filters
+                </button>
               </div>
-            </section>
-          )}
-        </main>
-      </div>
+            )}
 
+            {/* Manual grid */}
+            {!manualsLoading && !manualsError && filteredManuals.length > 0 && (
+              <section aria-label={`Manuals list — ${filteredManuals.length} result${filteredManuals.length !== 1 ? 's' : ''}`}>
+                {/* Live region announces filter result count */}
+                <p className="sr-only" aria-live="polite" aria-atomic="true">
+                  {filteredManuals.length} manual{filteredManuals.length !== 1 ? 's' : ''} found.
+                </p>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3 gap-5">
+                  {filteredManuals.map((manual) => (
+                    <ManualCard key={manual.id} manual={manual} onDelete={handleDeleteRequest} />
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* Right: activity feed */}
+          <aside
+            className="xl:w-80 shrink-0"
+            aria-label="Recent activity sidebar"
+          >
+            <ActivityFeed
+              events={recentActivity}
+              isLoading={analyticsLoading}
+            />
+          </aside>
+        </div>
+      </DashboardShell>
+
+      {/* Delete confirmation modal */}
       {pendingDelete && (
         <DeleteModal
           manualName={pendingDelete.name}

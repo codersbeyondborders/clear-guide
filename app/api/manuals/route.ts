@@ -31,9 +31,12 @@ export async function GET(request: Request) {
         m.id, m.product_name AS "productName", m.product_model AS "productModel",
         m.brand, m.status, m.languages, m.cover_image AS "coverImage",
         m.created_at AS "createdAt", m.updated_at AS "updatedAt",
-        COUNT(s.id)::int AS "sectionCount"
+        COUNT(DISTINCT s.id)::int                      AS "sectionCount",
+        COUNT(DISTINCT a.id)::int                      AS "viewCount",
+        COALESCE(AVG(a.time_spent_seconds), 0)::int    AS "avgTimeSeconds"
       FROM manuals m
       LEFT JOIN manual_sections s ON s.manual_id = m.id
+      LEFT JOIN analytics a       ON a.manual_id  = m.id
       WHERE m.user_id = $1
         AND m.deleted_at IS NULL
         ${status && status !== 'all' ? 'AND m.status = $2' : ''}
