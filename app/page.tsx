@@ -5,6 +5,7 @@ import {
   Shield, MessageSquare, Globe, Volume2,
   LayoutDashboard, QrCode, ChevronDown, Zap,
 } from 'lucide-react'
+import { FindYourGuideSection } from '@/components/FindYourGuideSection'
 
 /* ─── Nav ──────────────────────────────────────────────────────────────── */
 function Nav() {
@@ -1025,6 +1026,7 @@ export default function LandingPage() {
       <Nav />
       <main id="main-content">
         <Hero />
+        <FindYourGuideSection />
         <Stats />
         <WhyClearGuide />
         <PlatformFeatures />
