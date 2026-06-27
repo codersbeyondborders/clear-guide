@@ -1,14 +1,36 @@
+'use client'
+
 import Link from 'next/link'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { QRCodeDisplay } from '@/components/QRCodeDisplay'
 import { ManualSearchForm } from '@/components/ManualSearchForm'
-import type { Metadata } from 'next'
+import { ChevronDown, FlaskConical, ArrowRight } from 'lucide-react'
 
-export const metadata: Metadata = {
-  title: 'Find Your Guide — ClearGuide',
-  description: 'Scan a QR code or search by product details to access your accessible product manual.',
+// ---------------------------------------------------------------------------
+// Demo products (seeded via /api/seed/demo-products)
+// ---------------------------------------------------------------------------
+const DEMO_PRODUCTS = [
+  { id: '9daccecf-ddd0-4ac3-b19a-3090ff90e7d0', name: 'BrewMaster Pro Smart Coffee Machine', model: 'BMP-X500', brand: 'BrewMaster' },
+  { id: '5e38b874-7b10-4b4e-b9c6-8e1a1c4f2d3a', name: 'GlideStep X2 Electric Wheelchair',    model: 'GSX2-LW',  brand: 'GlideStep'  },
+  { id: '1d3e6cd5-9f2a-4c1b-8e7d-2a4b6c8d0e1f', name: 'VertiDesk Apex Adjustable Work Desk', model: 'VDA-250',  brand: 'VertiDesk'  },
+  { id: '73be4028-1a2b-4c3d-5e6f-7a8b9c0d1e2f', name: 'SoundShield Pro Noise-Canceling Headphones', model: 'SSP-ANC4', brand: 'SoundShield' },
+  { id: '706376d2-3b4c-5d6e-7f8a-9b0c1d2e3f4a', name: 'AuraEar Clarity Digital Hearing Aid', model: 'AEC-RIC2', brand: 'AuraEar'   },
+]
+
+// Brand initials background colours — fixed palette for consistency
+const BRAND_COLORS: Record<string, string> = {
+  BrewMaster: '#d97706',
+  GlideStep:  '#0284c7',
+  VertiDesk:  '#7c3aed',
+  SoundShield: '#dc2626',
+  AuraEar:    '#059669',
 }
 
 export default function UserPortalPage() {
+  const router = useRouter()
+  const [demoOpen, setDemoOpen] = useState(false)
+
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans">
       {/* Header */}
@@ -54,6 +76,79 @@ export default function UserPortalPage() {
             <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Or search manually</span>
             <div className="h-px bg-border flex-1" />
           </div>
+
+          {/* Demo products */}
+          <section aria-labelledby="demo-section-title">
+            <button
+              type="button"
+              id="demo-section-title"
+              onClick={() => setDemoOpen(v => !v)}
+              aria-expanded={demoOpen}
+              aria-controls="demo-product-list"
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              style={{
+                borderColor: 'var(--color-primary)',
+                backgroundColor: 'var(--color-primary-subtle)',
+                color: 'var(--color-primary)',
+              }}
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <FlaskConical className="w-4 h-4 shrink-0" aria-hidden="true" />
+                Try a demo product
+              </span>
+              <ChevronDown
+                className="w-4 h-4 shrink-0 transition-transform duration-200"
+                style={{ transform: demoOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                aria-hidden="true"
+              />
+            </button>
+
+            {demoOpen && (
+              <ul
+                id="demo-product-list"
+                className="mt-2 rounded-xl border overflow-hidden"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)' }}
+                role="list"
+                aria-label="Demo products"
+              >
+                {DEMO_PRODUCTS.map((p, i) => (
+                  <li
+                    key={p.id}
+                    className="border-b last:border-b-0"
+                    style={{ borderColor: 'var(--color-border)' }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/manual/${p.id}`)}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-background-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                      aria-label={`Open ${p.name} demo manual`}
+                    >
+                      {/* Brand avatar */}
+                      <div
+                        className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center text-white font-black text-sm"
+                        style={{ backgroundColor: BRAND_COLORS[p.brand] ?? 'var(--color-primary)' }}
+                        aria-hidden="true"
+                      >
+                        {p.brand.charAt(0)}
+                      </div>
+
+                      {/* Name + model */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: 'var(--color-foreground)' }}>
+                          {p.name}
+                        </p>
+                        <p className="text-xs truncate" style={{ color: 'var(--color-muted-foreground)' }}>
+                          {p.brand} &middot; {p.model}
+                        </p>
+                      </div>
+
+                      <ArrowRight className="w-4 h-4 shrink-0" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
           {/* Search form card */}
           <section aria-labelledby="search-section-title" className="card p-8 space-y-5">
