@@ -77,7 +77,6 @@ export function FindYourGuideSection() {
                   className="flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset"
                   style={{
                     color: isActive ? '#09bc7c' : 'rgba(241,245,249,0.45)',
-                    focusVisibleOutlineColor: '#09bc7c',
                   }}
                 >
                   <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
