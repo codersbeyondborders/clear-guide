@@ -69,6 +69,10 @@ export interface DashboardKPI {
   publishedManuals: number
   totalViews: number
   activeUsers: number
+  /** % change in views vs prior 30-day period */
+  trendViews?: number
+  /** % change in active users vs prior 30-day period */
+  trendUsers?: number
 }
 
 export interface ActivityEvent {

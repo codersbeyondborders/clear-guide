@@ -1,6 +1,6 @@
 'use client'
 
-import { BookMarked, CheckCircle2, Eye, Users } from 'lucide-react'
+import { BookMarked, CheckCircle2, Eye, Users, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import type { DashboardKPI } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
@@ -13,6 +13,32 @@ function formatNumber(n: number): string {
 }
 
 // ---------------------------------------------------------------------------
+// Trend badge
+// ---------------------------------------------------------------------------
+function TrendBadge({ trend }: { trend: number }) {
+  const isUp   = trend > 0
+  const isDown = trend < 0
+  const TrendIcon = isUp ? TrendingUp : isDown ? TrendingDown : Minus
+
+  const color = isUp
+    ? 'var(--color-success, #16a34a)'
+    : isDown
+    ? 'var(--color-destructive)'
+    : 'var(--color-muted-foreground)'
+
+  return (
+    <span
+      className="flex items-center gap-1 text-[10px] font-semibold mt-1.5"
+      style={{ color }}
+      aria-label={`${isUp ? 'Up' : isDown ? 'Down' : 'Flat'} ${Math.abs(trend)}% vs last 30 days`}
+    >
+      <TrendIcon className="w-3 h-3" aria-hidden="true" />
+      {Math.abs(trend)}% vs last 30d
+    </span>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Single KPI card
 // ---------------------------------------------------------------------------
 interface KPICardProps {
@@ -22,9 +48,10 @@ interface KPICardProps {
   iconBg: string
   iconColor: string
   subLabel?: string
+  trend?: number
 }
 
-function KPICard({ label, value, icon: Icon, iconBg, iconColor, subLabel }: KPICardProps) {
+function KPICard({ label, value, icon: Icon, iconBg, iconColor, subLabel, trend }: KPICardProps) {
   return (
     <div
       className="rounded-2xl border p-5 flex items-start gap-4"
@@ -49,6 +76,7 @@ function KPICard({ label, value, icon: Icon, iconBg, iconColor, subLabel }: KPIC
             {subLabel}
           </p>
         )}
+        {trend !== undefined && <TrendBadge trend={trend} />}
       </div>
     </div>
   )
@@ -120,6 +148,7 @@ export function KPISummaryBar({ kpi, isLoading }: KPISummaryBarProps) {
       icon: Eye,
       iconBg: 'color-mix(in srgb, #0284c7 12%, transparent)',
       iconColor: '#0284c7',
+      trend: kpi?.trendViews,
     },
     {
       label: 'Active Users',
@@ -128,6 +157,7 @@ export function KPISummaryBar({ kpi, isLoading }: KPISummaryBarProps) {
       iconBg: 'color-mix(in srgb, #d97706 12%, transparent)',
       iconColor: '#d97706',
       subLabel: 'Last 30 days',
+      trend: kpi?.trendUsers,
     },
   ]
 

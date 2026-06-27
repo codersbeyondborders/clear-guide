@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Check, Share2, Download } from 'lucide-react'
 
 // Static QR SVG pattern (visual stand-in for a real QR code)
@@ -43,14 +44,18 @@ interface ManualDoneCardProps {
 }
 
 export function ManualDoneCard({ manualId, onGoToDashboard }: ManualDoneCardProps) {
+  const [shareFeedback, setShareFeedback] = useState<'idle' | 'copied' | 'shared'>('idle')
+
   const handleShare = async () => {
     const url = manualId ? `${window.location.origin}/manual/${manualId}` : window.location.href
     if (navigator.share) {
       await navigator.share({ title: 'ClearGuide Manual', url }).catch(() => null)
+      setShareFeedback('shared')
     } else {
       await navigator.clipboard.writeText(url).catch(() => null)
-      alert('Link copied to clipboard!')
+      setShareFeedback('copied')
     }
+    setTimeout(() => setShareFeedback('idle'), 2500)
   }
 
   return (
@@ -98,14 +103,31 @@ export function ManualDoneCard({ manualId, onGoToDashboard }: ManualDoneCardProp
       </div>
 
       {/* Action buttons */}
+      {shareFeedback !== 'idle' && (
+        <p
+          className="text-xs font-medium py-1.5 px-3 rounded-lg w-full text-center"
+          style={{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}
+          aria-live="polite"
+        >
+          {shareFeedback === 'copied' ? 'Link copied to clipboard!' : 'Shared successfully!'}
+        </p>
+      )}
+
       <div className="flex items-center gap-3 w-full">
         <button
           onClick={handleShare}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-full border text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          style={{ borderColor: 'var(--color-border)', color: 'var(--color-foreground)', backgroundColor: 'var(--color-card)' }}
+          style={{
+            borderColor: shareFeedback !== 'idle' ? 'var(--color-primary)' : 'var(--color-border)',
+            color: shareFeedback !== 'idle' ? 'var(--color-primary)' : 'var(--color-foreground)',
+            backgroundColor: 'var(--color-card)',
+          }}
         >
-          <Share2 className="w-4 h-4" aria-hidden="true" />
-          Share
+          {shareFeedback !== 'idle'
+            ? <Check className="w-4 h-4" aria-hidden="true" />
+            : <Share2 className="w-4 h-4" aria-hidden="true" />
+          }
+          {shareFeedback !== 'idle' ? 'Copied!' : 'Share'}
         </button>
         <button
           onClick={() => {

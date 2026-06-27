@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo, useId } from 'react'
+import { useState, useMemo, useId, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, AlertTriangle, Search, X, ChevronDown } from 'lucide-react'
+import { Plus, AlertTriangle, Search, X, ChevronDown, LayoutGrid, List } from 'lucide-react'
 import { ManualCard } from '@/components/ManualCard'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
 import { KPISummaryBar } from '@/components/dashboard/KPISummaryBar'
@@ -186,6 +186,18 @@ export default function ManufacturerDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [sortKey, setSortKey] = useState<SortKey>('newest')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+  // Persist view mode preference
+  useEffect(() => {
+    const saved = localStorage.getItem('manuals-view-mode')
+    if (saved === 'list' || saved === 'grid') setViewMode(saved)
+  }, [])
+
+  const handleSetViewMode = (mode: 'grid' | 'list') => {
+    setViewMode(mode)
+    localStorage.setItem('manuals-view-mode', mode)
+  }
 
   // ── Derived display name ──────────────────────────────────────────────────
   const displayName: string = (
@@ -287,7 +299,7 @@ export default function ManufacturerDashboard() {
           {/* Left: manuals grid */}
           <div className="flex-1 min-w-0">
 
-            {/* Search + Sort row */}
+            {/* Search + Sort + View toggle row */}
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               {/* Search input */}
               <div className="relative flex-1">
@@ -347,6 +359,32 @@ export default function ManufacturerDashboard() {
                   style={{ color: 'var(--color-muted-foreground)' }}
                   aria-hidden="true"
                 />
+              </div>
+
+              {/* View mode toggle */}
+              <div
+                className="flex items-center gap-0.5 p-0.5 rounded-xl border shrink-0"
+                style={{ backgroundColor: 'var(--color-background-subtle)', borderColor: 'var(--color-border)' }}
+                role="group"
+                aria-label="View mode"
+              >
+                {([['grid', LayoutGrid], ['list', List]] as const).map(([mode, Icon]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => handleSetViewMode(mode)}
+                    aria-pressed={viewMode === mode}
+                    aria-label={`${mode} view`}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    style={{
+                      backgroundColor: viewMode === mode ? 'var(--color-card)' : 'transparent',
+                      color: viewMode === mode ? 'var(--color-foreground)' : 'var(--color-muted-foreground)',
+                      boxShadow: viewMode === mode ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                    }}
+                  >
+                    <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -471,18 +509,29 @@ export default function ManufacturerDashboard() {
               </div>
             )}
 
-            {/* Manual grid */}
+            {/* Manual grid / list */}
             {!manualsLoading && !manualsError && filteredManuals.length > 0 && (
               <section aria-label={`Manuals list — ${filteredManuals.length} result${filteredManuals.length !== 1 ? 's' : ''}`}>
                 {/* Live region announces filter result count */}
                 <p className="sr-only" aria-live="polite" aria-atomic="true">
                   {filteredManuals.length} manual{filteredManuals.length !== 1 ? 's' : ''} found.
                 </p>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3 gap-5">
-                  {filteredManuals.map((manual) => (
-                    <ManualCard key={manual.id} manual={manual} onDelete={handleDeleteRequest} />
-                  ))}
-                </div>
+                {viewMode === 'grid' ? (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3 gap-5">
+                    {filteredManuals.map((manual) => (
+                      <ManualCard key={manual.id} manual={manual} onDelete={handleDeleteRequest} />
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="rounded-2xl border overflow-hidden"
+                    style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+                  >
+                    {filteredManuals.map((manual) => (
+                      <ManualCard key={manual.id} manual={manual} onDelete={handleDeleteRequest} listMode />
+                    ))}
+                  </div>
+                )}
               </section>
             )}
           </div>

@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
 import {
-  User, Lock, Bell, Trash2, Check, AlertTriangle, Eye, EyeOff,
+  User, Lock, Bell, Trash2, Check, AlertTriangle, Eye, EyeOff, Loader2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -359,7 +360,7 @@ function PasswordSection() {
 }
 
 // ---------------------------------------------------------------------------
-// Notifications section (local preference only — no server round-trip)
+// Notifications section — persisted to Supabase user metadata
 // ---------------------------------------------------------------------------
 type NotifKey = 'manualPublished' | 'manualFailed' | 'weeklyDigest'
 
@@ -381,23 +382,35 @@ const NOTIF_OPTIONS: { key: NotifKey; label: string; description: string }[] = [
   },
 ]
 
-function NotificationsSection() {
-  const [prefs, setPrefs] = useState<Record<NotifKey, boolean>>({
-    manualPublished: true,
-    manualFailed: true,
-    weeklyDigest: false,
-  })
-  const [saved, setSaved] = useState(false)
+const DEFAULT_NOTIF_PREFS: Record<NotifKey, boolean> = {
+  manualPublished: true,
+  manualFailed: true,
+  weeklyDigest: false,
+}
+
+function NotificationsSection({ user }: { user: SupabaseUser | null }) {
+  const savedPrefs = (user?.user_metadata?.notification_prefs ?? DEFAULT_NOTIF_PREFS) as Record<NotifKey, boolean>
+
+  const [prefs, setPrefs] = useState<Record<NotifKey, boolean>>(savedPrefs)
+  const [saving, setSaving] = useState(false)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const toggle = (key: NotifKey) => {
     setPrefs((p) => ({ ...p, [key]: !p[key] }))
-    setSaved(false)
+    setFeedback(null)
   }
 
-  const handleSave = () => {
-    // Would persist to user preferences in production
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  const handleSave = async () => {
+    setSaving(true)
+    setFeedback(null)
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({ data: { notification_prefs: prefs } })
+    setSaving(false)
+    if (error) {
+      setFeedback({ type: 'error', message: error.message })
+    } else {
+      setFeedback({ type: 'success', message: 'Notification preferences saved.' })
+    }
   }
 
   return (
@@ -443,11 +456,17 @@ function NotificationsSection() {
         ))}
       </div>
 
-      {saved && <Alert type="success" message="Notification preferences saved." />}
+      {feedback && <Alert type={feedback.type} message={feedback.message} />}
 
       <div className="flex justify-end">
-        <button type="button" onClick={handleSave} className="btn-primary">
-          Save Preferences
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="btn-primary flex items-center gap-2"
+        >
+          {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />}
+          {saving ? 'Saving…' : 'Save Preferences'}
         </button>
       </div>
     </SettingsSection>
@@ -459,7 +478,27 @@ function NotificationsSection() {
 // ---------------------------------------------------------------------------
 function DangerSection({ onLogout }: { onLogout: () => void }) {
   const [confirmText, setConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const CONFIRM_PHRASE = 'DELETE'
+
+  const handleDelete = async () => {
+    if (confirmText !== CONFIRM_PHRASE) return
+    setDeleting(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/account', { method: 'DELETE' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error ?? `Server error ${res.status}`)
+      }
+      // Account deleted — sign out and redirect
+      await onLogout()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete account. Please try again.')
+      setDeleting(false)
+    }
+  }
 
   return (
     <SettingsSection title="Danger Zone">
@@ -495,31 +534,34 @@ function DangerSection({ onLogout }: { onLogout: () => void }) {
             id="confirm-delete"
             type="text"
             value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
+            onChange={(e) => { setConfirmText(e.target.value); setError(null) }}
             placeholder={`Type "${CONFIRM_PHRASE}" to confirm`}
             className="auth-input"
             aria-describedby="confirm-delete-hint"
+            disabled={deleting}
           />
           <p id="confirm-delete-hint" className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
             This permanently deletes all your data.
           </p>
         </div>
 
+        {error && <Alert type="error" message={error} />}
+
         <button
           type="button"
-          disabled={confirmText !== CONFIRM_PHRASE}
+          disabled={confirmText !== CONFIRM_PHRASE || deleting}
           className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             backgroundColor: 'var(--color-destructive)',
             color: 'var(--color-destructive-foreground)',
           }}
-          onClick={() => {
-            // In production: call DELETE /api/account, then sign out
-            onLogout()
-          }}
+          onClick={handleDelete}
         >
-          <Trash2 className="w-4 h-4" aria-hidden="true" />
-          Delete My Account
+          {deleting
+            ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+            : <Trash2 className="w-4 h-4" aria-hidden="true" />
+          }
+          {deleting ? 'Deleting…' : 'Delete My Account'}
         </button>
       </div>
     </SettingsSection>
@@ -620,7 +662,7 @@ export default function SettingsPage() {
         <div className="flex-1 min-w-0 space-y-6">
           {activeTab === 'profile'       && <ProfileSection email={email} />}
           {activeTab === 'password'      && <PasswordSection />}
-          {activeTab === 'notifications' && <NotificationsSection />}
+          {activeTab === 'notifications' && <NotificationsSection user={user ?? null} />}
           {activeTab === 'danger'        && <DangerSection onLogout={logout} />}
         </div>
       </div>

@@ -1,12 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams } from 'next/navigation'
-import { AccessibilityProvider } from '@/context/AccessibilityContext'
+import useSWR from 'swr'
+import { Loader2, AlertCircle, ImageOff } from 'lucide-react'
+import { AccessibilityProvider, useAccessibility } from '@/context/AccessibilityContext'
 import { ViewerHeader } from '@/components/ViewerHeader'
 import { ViewerTabBar } from '@/components/ViewerTabBar'
-import Image from 'next/image'
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 interface Section {
   id: string
   sectionNumber: number
@@ -20,52 +24,178 @@ interface Manual {
   productName: string
   productModel: string | null
   brand: string | null
+  serialNumber: string | null
+  description: string | null
   languages: string[]
   sections: Section[]
 }
 
-// Mock infographic image URL — in production, this would be AI-generated
-const DEMO_INFOGRAPHIC = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/after-Fxe8lwx6J74SmS3LZvmRS5ye0R8CqI.webp'
+// ---------------------------------------------------------------------------
+// Fetcher
+// ---------------------------------------------------------------------------
+const fetcher = (url: string) =>
+  fetch(url).then(r => {
+    if (!r.ok) throw new Error(`${r.status}`)
+    return r.json() as Promise<Manual>
+  })
 
+// ---------------------------------------------------------------------------
+// Inner content
+// ---------------------------------------------------------------------------
 function InfographicContent({ manual }: { manual: Manual }) {
-  const params = useParams()
+  const params   = useParams()
   const manualId = params.id as string
   const [selectedLang, setSelectedLang] = useState(manual.languages[0] ?? 'en')
+  const [expanded, setExpanded] = useState<string | null>(null)
 
-  // Use the first available image across all sections as the infographic
-  const firstImage = manual.sections.flatMap(s => s.imageUrls)[0] ?? DEMO_INFOGRAPHIC
+  const { fontSizeClass, highContrast } = useAccessibility()
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{
+        backgroundColor: highContrast ? '#000' : 'var(--color-background)',
+        color: highContrast ? '#fff' : 'var(--color-foreground)',
+      }}
+    >
       <ViewerHeader
-        productName={manual.productName}
+        manualInfo={{
+          productName: manual.productName,
+          productModel: manual.productModel,
+          brand: manual.brand,
+          serialNumber: manual.serialNumber,
+          languages: manual.languages,
+          sectionCount: manual.sections.length,
+        }}
         manualId={manualId}
-        availableLanguages={manual.languages}
         selectedLang={selectedLang}
         onLangChange={setSelectedLang}
       />
 
       <main id="main-content" className="flex-1 p-4 lg:p-6">
-        {/* Title */}
-        <div className="mb-4">
-          <h1 className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>
+        {/* Page title */}
+        <div className="mb-6">
+          <h1
+            className={`text-xl font-bold ${fontSizeClass}`}
+            style={{ color: highContrast ? '#fff' : 'var(--color-foreground)' }}
+          >
             {manual.productName}
           </h1>
-          <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
-            Visual product overview
+          <p className="text-sm mt-0.5" style={{ color: highContrast ? '#aaa' : 'var(--color-muted-foreground)' }}>
+            Visual product overview &mdash; {manual.sections.length} section{manual.sections.length !== 1 ? 's' : ''}
           </p>
         </div>
 
-        {/* Full-width infographic */}
-        <div className="rounded-xl overflow-hidden border" style={{ borderColor: 'var(--color-border)' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={firstImage}
-            alt={`${manual.productName} visual product overview`}
-            className="w-full object-contain"
-            style={{ maxHeight: '70vh', backgroundColor: 'var(--color-background-subtle)' }}
-          />
-        </div>
+        {/* Masonry-like section grid */}
+        {manual.sections.length === 0 ? (
+          <div
+            className="flex flex-col items-center justify-center py-20 gap-3 rounded-2xl border"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)' }}
+          >
+            <ImageOff className="w-8 h-8" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true" />
+            <p style={{ color: 'var(--color-muted-foreground)' }}>No sections available.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {manual.sections.map(section => {
+              const isExpanded = expanded === section.id
+              const hasImage   = section.imageUrls.length > 0
+
+              return (
+                <article
+                  key={section.id}
+                  className="rounded-2xl border overflow-hidden flex flex-col"
+                  style={{
+                    borderColor: highContrast ? '#555' : 'var(--color-border)',
+                    backgroundColor: highContrast ? '#111' : 'var(--color-card)',
+                  }}
+                >
+                  {/* Image or placeholder */}
+                  <div
+                    className="relative w-full"
+                    style={{
+                      aspectRatio: '16/9',
+                      backgroundColor: highContrast ? '#222' : 'var(--color-background-subtle)',
+                    }}
+                  >
+                    {hasImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={section.imageUrls[0]}
+                        alt={`${section.title} illustration`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center" aria-hidden="true">
+                        <div
+                          className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                          style={{ backgroundColor: 'var(--color-primary-subtle)' }}
+                        >
+                          <span
+                            className="text-2xl font-black"
+                            style={{ color: 'var(--color-primary)' }}
+                          >
+                            {section.sectionNumber}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {/* Section number badge */}
+                    <div
+                      className="absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                      style={{
+                        backgroundColor: 'var(--color-primary)',
+                        color: 'var(--color-primary-foreground)',
+                      }}
+                      aria-hidden="true"
+                    >
+                      {section.sectionNumber}
+                    </div>
+                  </div>
+
+                  {/* Text body */}
+                  <div className="p-4 flex flex-col gap-2 flex-1">
+                    <h2
+                      className={`font-bold leading-snug ${fontSizeClass}`}
+                      style={{ color: highContrast ? '#fff' : 'var(--color-foreground)' }}
+                    >
+                      {section.title}
+                    </h2>
+
+                    {section.content ? (
+                      <div>
+                        <p
+                          className={`text-sm leading-relaxed ${isExpanded ? '' : 'line-clamp-3'}`}
+                          style={{ color: highContrast ? '#ccc' : 'var(--color-muted-foreground)' }}
+                        >
+                          {section.content}
+                        </p>
+                        {section.content.length > 150 && (
+                          <button
+                            onClick={() => setExpanded(isExpanded ? null : section.id)}
+                            className="mt-1 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            style={{ color: 'var(--color-primary)' }}
+                            aria-expanded={isExpanded}
+                            aria-controls={`section-content-${section.id}`}
+                          >
+                            {isExpanded ? 'Show less' : 'Read more'}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <p
+                        className="text-sm italic"
+                        style={{ color: highContrast ? '#666' : 'var(--color-muted-foreground)' }}
+                      >
+                        No description.
+                      </p>
+                    )}
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        )}
       </main>
 
       <ViewerTabBar manualId={manualId} activeMode="infographic" />
@@ -73,35 +203,44 @@ function InfographicContent({ manual }: { manual: Manual }) {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Page shell
+// ---------------------------------------------------------------------------
 export default function InfographicModePage() {
-  const params = useParams()
+  const params   = useParams()
   const manualId = params.id as string
-  const [manual, setManual] = useState<Manual | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!manualId) return
-    fetch(`/api/manuals/${manualId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(setManual)
-      .catch(() => null)
-      .finally(() => setLoading(false))
-  }, [manualId])
+  const { data: manual, error, isLoading } = useSWR<Manual>(
+    manualId ? `/api/public/manuals/${manualId}` : null,
+    fetcher,
+    { revalidateOnFocus: false },
+  )
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-        <div className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }} role="status" aria-label="Loading" />
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--color-background)' }}
+        role="status"
+        aria-label="Loading"
+      >
+        <Loader2 className="w-10 h-10 animate-spin" style={{ color: 'var(--color-primary)' }} />
       </div>
     )
   }
-  if (!manual) {
+
+  if (error || !manual) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4 p-8"
+        style={{ backgroundColor: 'var(--color-background)' }}
+      >
+        <AlertCircle className="w-8 h-8" style={{ color: 'var(--color-destructive)' }} aria-hidden="true" />
         <p style={{ color: 'var(--color-destructive)' }}>Could not load manual.</p>
       </div>
     )
   }
+
   return (
     <AccessibilityProvider initialLanguage={manual.languages?.[0] ?? 'en'}>
       <InfographicContent manual={manual} />
