@@ -297,6 +297,35 @@
 }
 
 /* ==========================================================================
+   FindYourGuide — dark-panel form surface overrides
+   Scoped to .find-guide-form-surface so the ManualSearchForm renders
+   correctly against the #1e293b background without touching global tokens.
+   ========================================================================== */
+.find-guide-form-surface label {
+  color: rgba(241, 245, 249, 0.75);
+}
+
+.find-guide-form-surface input {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+
+.find-guide-form-surface input::placeholder {
+  color: rgba(241, 245, 249, 0.3);
+}
+
+.find-guide-form-surface input:focus {
+  border-color: #09bc7c;
+  box-shadow: 0 0 0 3px rgba(9, 188, 124, 0.2);
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.find-guide-form-surface .text-muted-foreground {
+  color: rgba(241, 245, 249, 0.45) !important;
+}
+
+/* ==========================================================================
    Print styles
    ========================================================================== */
 @media print {
