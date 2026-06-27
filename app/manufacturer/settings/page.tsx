@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
 import {
-  User, Lock, Bell, Trash2, Check, AlertTriangle, Eye, EyeOff,
+  User, Lock, Bell, Trash2, Check, AlertTriangle, Eye, EyeOff, Loader2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -359,7 +360,7 @@ function PasswordSection() {
 }
 
 // ---------------------------------------------------------------------------
-// Notifications section (local preference only — no server round-trip)
+// Notifications section — persisted to Supabase user metadata
 // ---------------------------------------------------------------------------
 type NotifKey = 'manualPublished' | 'manualFailed' | 'weeklyDigest'
 
@@ -381,23 +382,35 @@ const NOTIF_OPTIONS: { key: NotifKey; label: string; description: string }[] = [
   },
 ]
 
-function NotificationsSection() {
-  const [prefs, setPrefs] = useState<Record<NotifKey, boolean>>({
-    manualPublished: true,
-    manualFailed: true,
-    weeklyDigest: false,
-  })
-  const [saved, setSaved] = useState(false)
+const DEFAULT_NOTIF_PREFS: Record<NotifKey, boolean> = {
+  manualPublished: true,
+  manualFailed: true,
+  weeklyDigest: false,
+}
+
+function NotificationsSection({ user }: { user: SupabaseUser | null }) {
+  const savedPrefs = (user?.user_metadata?.notification_prefs ?? DEFAULT_NOTIF_PREFS) as Record<NotifKey, boolean>
+
+  const [prefs, setPrefs] = useState<Record<NotifKey, boolean>>(savedPrefs)
+  const [saving, setSaving] = useState(false)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const toggle = (key: NotifKey) => {
     setPrefs((p) => ({ ...p, [key]: !p[key] }))
-    setSaved(false)
+    setFeedback(null)
   }
 
-  const handleSave = () => {
-    // Would persist to user preferences in production
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  const handleSave = async () => {
+    setSaving(true)
+    setFeedback(null)
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({ data: { notification_prefs: prefs } })
+    setSaving(false)
+    if (error) {
+      setFeedback({ type: 'error', message: error.message })
+    } else {
+      setFeedback({ type: 'success', message: 'Notification preferences saved.' })
+    }
   }
 
   return (

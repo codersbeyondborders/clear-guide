@@ -1,6 +1,7 @@
 'use client'
 
-import { Eye, Clock, QrCode, Globe, Monitor } from 'lucide-react'
+import { useState } from 'react'
+import { Eye, Clock, QrCode, Globe, Monitor, ChevronDown, ChevronUp } from 'lucide-react'
 import type { ActivityEvent, ViewMode } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
@@ -128,7 +129,14 @@ interface ActivityFeedProps {
 // ---------------------------------------------------------------------------
 // Feed
 // ---------------------------------------------------------------------------
+const DEFAULT_VISIBLE = 5
+
 export function ActivityFeed({ events, isLoading }: ActivityFeedProps) {
+  const [expanded, setExpanded] = useState(false)
+
+  const visibleEvents = expanded ? events : events.slice(0, DEFAULT_VISIBLE)
+  const hasMore = events.length > DEFAULT_VISIBLE
+
   return (
     <section
       aria-label="Recent activity"
@@ -143,12 +151,19 @@ export function ActivityFeed({ events, isLoading }: ActivityFeedProps) {
         <h2 className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>
           Recent Activity
         </h2>
-        <Eye className="w-4 h-4" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true" />
+        {!isLoading && events.length > 0 && (
+          <span
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}
+          >
+            {events.length}
+          </span>
+        )}
       </div>
 
       {/* List */}
       <div
-        className="flex-1 overflow-y-auto px-5"
+        className="flex-1 px-5"
         aria-live="polite"
         aria-label="Activity events list"
       >
@@ -165,12 +180,33 @@ export function ActivityFeed({ events, isLoading }: ActivityFeedProps) {
           </div>
         ) : (
           <ul>
-            {events.map((event) => (
+            {visibleEvents.map((event) => (
               <ActivityRow key={event.id} event={event} />
             ))}
           </ul>
         )}
       </div>
+
+      {/* View all / show less toggle */}
+      {!isLoading && hasMore && (
+        <div
+          className="px-5 py-3 border-t shrink-0"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            style={{ color: 'var(--color-primary)' }}
+            aria-expanded={expanded}
+          >
+            {expanded
+              ? <><ChevronUp className="w-3.5 h-3.5" aria-hidden="true" /> Show less</>
+              : <><ChevronDown className="w-3.5 h-3.5" aria-hidden="true" /> View all {events.length} events</>
+            }
+          </button>
+        </div>
+      )}
     </section>
   )
 }

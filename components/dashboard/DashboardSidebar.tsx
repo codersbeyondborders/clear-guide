@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, BarChart2, Settings, LogOut, X, BookOpen } from 'lucide-react'
+import { LayoutDashboard, BarChart2, Settings, LogOut, X } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Logo
@@ -38,9 +38,9 @@ function ClearGuideLogo() {
 // Nav items
 // ---------------------------------------------------------------------------
 const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/manufacturer/dashboard', icon: LayoutDashboard },
-  { label: 'My Manuals', href: '/manufacturer/dashboard', icon: BookOpen, exact: false },
-  { label: 'Settings', href: '/manufacturer/settings', icon: Settings },
+  { label: 'Dashboard',  href: '/manufacturer/dashboard',  icon: LayoutDashboard },
+  { label: 'Analytics',  href: '/manufacturer/analytics',  icon: BarChart2       },
+  { label: 'Settings',   href: '/manufacturer/settings',   icon: Settings        },
 ] as const
 
 interface SidebarProps {
@@ -102,7 +102,10 @@ function SidebarContent({
           Menu
         </p>
         {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
-          const isActive = pathname === href
+          // Exact match for dashboard; prefix match for analytics / settings
+          const isActive = href === '/manufacturer/dashboard'
+            ? pathname === href
+            : pathname === href || pathname.startsWith(href + '/')
           return (
             <Link
               key={label}

@@ -1,10 +1,17 @@
 'use client'
 
-import { use } from 'react'
+import { use, useState } from 'react'
 import { ArrowLeft, Eye, Users, Clock, Download } from 'lucide-react'
 import useSWR from 'swr'
 import dynamic from 'next/dynamic'
 import { KPICard } from '@/components/KPICard'
+
+type Period = '7d' | '30d' | '90d'
+const PERIODS: { key: Period; label: string }[] = [
+  { key: '7d',  label: '7d'  },
+  { key: '30d', label: '30d' },
+  { key: '90d', label: '90d' },
+]
 
 // Recharts is ~350 KB — code-split it
 const ViewsLineChart = dynamic(
@@ -64,8 +71,10 @@ function ClearGuideLogo() {
 
 export default function AnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const [period, setPeriod] = useState<Period>('7d')
+
   const { data, isLoading, error } = useSWR<AnalyticsData>(
-    `/api/manuals/${id}/analytics`,
+    `/api/manuals/${id}/analytics?period=${period}`,
     fetcher,
     { refreshInterval: 60_000 },
   )
@@ -116,7 +125,37 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
               color: 'var(--color-foreground)',
               backgroundColor: 'var(--color-card)',
             }}
-            onClick={() => alert('CSV export coming in Phase 4.')}
+            onClick={() => {
+              if (!data) return
+              const rows: string[] = [
+                `ClearGuide Analytics — ${data.manualName}`,
+                `Exported: ${new Date().toLocaleString()}`,
+                `Period: ${period}`,
+                '',
+                '=== KPI Summary ===',
+                `Total Views,${data.totalViews}`,
+                `Active Users,${data.activeUsers}`,
+                `Avg Time Spent,${data.avgTimeSpent}`,
+                `Views Trend,${data.trendViews}%`,
+                `Users Trend,${data.trendUsers}%`,
+                '',
+                '=== Views Over Time ===',
+                'Date,Views',
+                ...data.viewsOverTime.map(r => `${r.date},${r.views}`),
+                '',
+                '=== Top AI Queries ===',
+                'Query,Count',
+                ...data.topAIQueries.map(r => `"${r.query.replace(/"/g, '""')}",${r.count}`),
+              ]
+              const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `${data.manualName ?? 'analytics'}-${period}.csv`
+              a.click()
+              URL.revokeObjectURL(url)
+            }}
+            disabled={!data}
           >
             <Download className="w-4 h-4" aria-hidden="true" />
             Export CSV
@@ -140,17 +179,44 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
           </div>
         )}
 
-        {/* ── Page title ───────────────────────────────────────────────── */}
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-foreground)' }}>
-            Analytics
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
-            {data?.manualName
-              ? `Performance overview for "${data.manualName}"`
-              : 'Performance overview for this manual'}
-            &nbsp;&mdash;&nbsp;auto-refreshes every minute
-          </p>
+        {/* ── Page title + period switcher ─────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: 'var(--color-foreground)' }}>
+              Analytics
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
+              {data?.manualName
+                ? `Performance overview for "${data.manualName}"`
+                : 'Performance overview for this manual'}
+              &nbsp;&mdash;&nbsp;auto-refreshes every minute
+            </p>
+          </div>
+
+          {/* Period switcher */}
+          <div
+            className="flex items-center gap-0.5 p-0.5 rounded-xl border self-start sm:self-auto shrink-0"
+            style={{ backgroundColor: 'var(--color-background-subtle)', borderColor: 'var(--color-border)' }}
+            role="group"
+            aria-label="Time period"
+          >
+            {PERIODS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setPeriod(key)}
+                aria-pressed={period === key}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                style={{
+                  backgroundColor: period === key ? 'var(--color-card)' : 'transparent',
+                  color: period === key ? 'var(--color-foreground)' : 'var(--color-muted-foreground)',
+                  boxShadow: period === key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── KPI cards ────────────────────────────────────────────────── */}
@@ -210,7 +276,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
               </h2>
             </div>
             <p className="text-xs mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
-              Last 7 Days
+              {period === '7d' ? 'Last 7 days' : period === '30d' ? 'Last 30 days' : 'Last 90 days'}
             </p>
             {isLoading ? (
               <ChartSkeleton height={220} />
