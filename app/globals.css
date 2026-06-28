@@ -83,6 +83,52 @@
 }
 
 /* ==========================================================================
+   Dark mode — defined OUTSIDE @theme so they override via normal cascade.
+   Tailwind v4 @theme inline tokens sit in @layer theme; rules outside any
+   @layer always win over layered rules (unlayered > layered precedence).
+   ========================================================================== */
+
+/* OS-level dark preference — only applies when user hasn't pinned light */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-background:            #0f172a;
+    --color-background-subtle:     #1e293b;
+    --color-card:                  #1e293b;
+    --color-card-hover:            #273548;
+    --color-foreground:            #f1f5f9;
+    --color-muted-foreground:      #94a3b8;
+    --color-primary:               #10b981;
+    --color-primary-hover:         #059669;
+    --color-primary-foreground:    #0f172a;
+    --color-primary-subtle:        #064e3b;
+    --color-border:                #334155;
+    --color-border-strong:         #475569;
+    --color-destructive:           #f87171;
+    --color-destructive-foreground:#0f172a;
+    --color-ring:                  #10b981;
+  }
+}
+
+/* Manual dark — data-theme="dark" attribute on <html> */
+:root[data-theme="dark"] {
+  --color-background:            #0f172a;
+  --color-background-subtle:     #1e293b;
+  --color-card:                  #1e293b;
+  --color-card-hover:            #273548;
+  --color-foreground:            #f1f5f9;
+  --color-muted-foreground:      #94a3b8;
+  --color-primary:               #10b981;
+  --color-primary-hover:         #059669;
+  --color-primary-foreground:    #0f172a;
+  --color-primary-subtle:        #064e3b;
+  --color-border:                #334155;
+  --color-border-strong:         #475569;
+  --color-destructive:           #f87171;
+  --color-destructive-foreground:#0f172a;
+  --color-ring:                  #10b981;
+}
+
+/* ==========================================================================
    Base resets + Dark mode
    Dark tokens live inside @layer base so they beat @layer theme (Tailwind v4
    processes layers in order: theme → base → components → utilities).

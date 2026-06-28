@@ -12,7 +12,8 @@ import { NavBar } from '@/components/NavBar'
 function Hero() {
   return (
     <section
-      className="bg-background overflow-hidden"
+      style={{ backgroundColor: 'var(--color-background)' }}
+      className="overflow-hidden"
       aria-labelledby="hero-heading"
     >
       <div className="container">
@@ -228,7 +229,8 @@ function PlatformFeatures() {
   return (
     <section
       id="features"
-      className="py-16 md:py-20 bg-background"
+      className="py-16 md:py-20"
+      style={{ backgroundColor: 'var(--color-background)' }}
       aria-labelledby="platform-heading"
     >
       <div className="container">
@@ -452,7 +454,7 @@ function ManufacturerSection() {
           </div>
 
           {/* Right — mini dashboard mockup */}
-          <div className="card p-6 bg-background shadow-sm">
+          <div className="card p-6 shadow-sm" style={{ backgroundColor: 'var(--color-card)' }}>
             <div className="flex items-center justify-between mb-5">
               <span className="text-sm font-semibold text-foreground">Analytics Overview</span>
               <span className="badge badge-green text-xs flex items-center gap-1">
@@ -533,7 +535,8 @@ const testimonials = [
 function Testimonials() {
   return (
     <section
-      className="py-16 md:py-20 bg-background"
+      className="py-16 md:py-20"
+      style={{ backgroundColor: 'var(--color-background)' }}
       aria-labelledby="testimonials-heading"
     >
       <div className="container">
@@ -595,7 +598,7 @@ function Testimonials() {
   )
 }
 
-/* ─── Pricing ───────────────────────────────────────────────────────────── */
+/* ─── Pricing ──────────────────────────���────────────────────────────────── */
 const plans = [
   {
     name: 'Free',
@@ -760,7 +763,8 @@ function FAQ() {
   return (
     <section
       id="faq"
-      className="py-16 md:py-20 bg-background"
+      className="py-16 md:py-20"
+      style={{ backgroundColor: 'var(--color-background)' }}
       aria-labelledby="faq-heading"
     >
       <div className="container">

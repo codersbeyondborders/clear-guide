@@ -38,55 +38,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} scroll-smooth`} suppressHydrationWarning>
       <head>
-        {/* Inline script — runs before paint to prevent flash-of-wrong-theme */}
+        {/*
+          FOWT prevention — runs synchronously before first paint.
+          Sets data-theme attribute (drives CSS token overrides) and .dark
+          class (drives Tailwind dark: utilities) on <html> immediately.
+        */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('cg-theme');var d=document.documentElement;if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches)){d.classList.add('dark');d.style.colorScheme='dark';}else{d.classList.remove('dark');d.style.colorScheme='light';}}catch(e){}})();`,
+            __html: `(function(){try{
+              var t=localStorage.getItem('cg-theme')||'system';
+              var d=document.documentElement;
+              var dark=(t==='dark')||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+              var L={'--color-background':'#ffffff','--color-background-subtle':'#f8fafc','--color-card':'#ffffff','--color-card-hover':'#f1f5f9','--color-foreground':'#0f172a','--color-muted-foreground':'#64748b','--color-primary':'#00d084','--color-primary-hover':'#00b366','--color-primary-foreground':'#ffffff','--color-primary-subtle':'#ecfdf5','--color-border':'#e2e8f0','--color-border-strong':'#cbd5e1','--color-destructive':'#dc2626','--color-destructive-foreground':'#ffffff','--color-ring':'#00d084'};
+              var K={'--color-background':'#0f172a','--color-background-subtle':'#1e293b','--color-card':'#1e293b','--color-card-hover':'#273548','--color-foreground':'#f1f5f9','--color-muted-foreground':'#94a3b8','--color-primary':'#10b981','--color-primary-hover':'#059669','--color-primary-foreground':'#0f172a','--color-primary-subtle':'#064e3b','--color-border':'#334155','--color-border-strong':'#475569','--color-destructive':'#f87171','--color-destructive-foreground':'#0f172a','--color-ring':'#10b981'};
+              var tokens=dark?K:L;
+              Object.keys(tokens).forEach(function(p){d.style.setProperty(p,tokens[p]);});
+              d.setAttribute('data-theme',t==='system'?(dark?'dark':'light'):t);
+              if(dark){d.classList.add('dark');d.style.colorScheme='dark';}
+              else{d.classList.remove('dark');d.style.colorScheme='light';}
+            }catch(e){}})();`,
           }}
         />
-        {/*
-          Dark-mode token overrides — injected as a plain <style> tag so they
-          live outside Tailwind v4's @layer system entirely and always win the
-          cascade over @layer theme tokens.
-        */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @media (prefers-color-scheme: dark) {
-            :root:not(.light) {
-              --color-background: #0f172a;
-              --color-background-subtle: #1e293b;
-              --color-card: #1e293b;
-              --color-card-hover: #273548;
-              --color-foreground: #f1f5f9;
-              --color-muted-foreground: #94a3b8;
-              --color-primary: #10b981;
-              --color-primary-hover: #059669;
-              --color-primary-foreground: #0f172a;
-              --color-primary-subtle: #064e3b;
-              --color-border: #334155;
-              --color-border-strong: #475569;
-              --color-destructive: #f87171;
-              --color-destructive-foreground: #0f172a;
-              --color-ring: #10b981;
-            }
-          }
-          :root.dark {
-            --color-background: #0f172a;
-            --color-background-subtle: #1e293b;
-            --color-card: #1e293b;
-            --color-card-hover: #273548;
-            --color-foreground: #f1f5f9;
-            --color-muted-foreground: #94a3b8;
-            --color-primary: #10b981;
-            --color-primary-hover: #059669;
-            --color-primary-foreground: #0f172a;
-            --color-primary-subtle: #064e3b;
-            --color-border: #334155;
-            --color-border-strong: #475569;
-            --color-destructive: #f87171;
-            --color-destructive-foreground: #0f172a;
-            --color-ring: #10b981;
-          }
-        `}} />
       </head>
       <body className="font-sans antialiased">
         {/* Skip to main content — WCAG 2.4.1 */}
