@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { LayoutDashboard, BarChart2, Settings, LogOut, X } from 'lucide-react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 // ---------------------------------------------------------------------------
 // Logo
@@ -135,8 +136,15 @@ function SidebarContent({
       {/* Divider */}
       <div className="mx-3 border-t" style={{ borderColor: 'var(--color-border)' }} />
 
-      {/* User profile + logout */}
+      {/* Theme + User profile + logout */}
       <div className="px-3 py-4 space-y-1">
+        {/* Theme toggle row */}
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-xs font-medium" style={{ color: 'var(--color-muted-foreground)' }}>
+            Theme
+          </span>
+          <ThemeToggle />
+        </div>
         {/* Logout */}
         <button
           onClick={onLogout}
