@@ -178,8 +178,8 @@ export default function ManufacturerDashboard() {
   const sortId = useId()
 
   const { user, isLoading: authLoading, logout } = useAuth()
-  const { manuals, isLoading: manualsLoading, isError: manualsError, deleteManual } = useManuals()
-  const { kpi, recentActivity, isLoading: analyticsLoading, isError: analyticsError } = useDashboardAnalytics()
+  const { manuals, isLoading: manualsLoading, isError: manualsError, deleteManual, mutate: retryManuals } = useManuals()
+  const { kpi, recentActivity, isLoading: analyticsLoading, isError: analyticsError, retry: retryAnalytics } = useDashboardAnalytics()
 
   // ── Local UI state ────────────────────────────────────────────────────────
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
@@ -288,7 +288,14 @@ export default function ManufacturerDashboard() {
               role="alert"
             >
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              Could not load analytics summary.
+              Could not load analytics summary.{' '}
+              <button
+                type="button"
+                onClick={retryAnalytics}
+                className="underline font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                Retry
+              </button>
             </p>
           )}
         </div>
@@ -432,15 +439,24 @@ export default function ManufacturerDashboard() {
             {manualsError && (
               <div
                 role="alert"
-                className="px-4 py-3 rounded-xl border text-sm flex items-center gap-2 mb-5"
+                className="px-4 py-3 rounded-xl border text-sm flex items-center justify-between gap-3 mb-5"
                 style={{
                   backgroundColor: 'color-mix(in srgb, var(--color-destructive) 8%, transparent)',
                   color: 'var(--color-destructive)',
                   borderColor: 'color-mix(in srgb, var(--color-destructive) 20%, transparent)',
                 }}
               >
-                <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
-                Failed to load manuals. Please refresh the page.
+                <span className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  Failed to load manuals. This is usually a temporary connection issue.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => retryManuals()}
+                  className="shrink-0 text-xs font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                >
+                  Retry
+                </button>
               </div>
             )}
 

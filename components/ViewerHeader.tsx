@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAccessibility } from '@/context/AccessibilityContext'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -306,6 +307,9 @@ export function ViewerHeader({
                 }
               </button>
             )}
+
+            {/* Theme toggle */}
+            <ThemeToggle />
 
             {/* Zoom out */}
             <button

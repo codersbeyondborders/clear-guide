@@ -3,7 +3,15 @@
 import useSWR from 'swr'
 import type { ManualListItem } from '@/lib/types'
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+const fetcher = async (url: string) => {
+  const r = await fetch(url)
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}))
+    const err = new Error(body?.error ?? `Request failed: ${r.status}`)
+    throw err
+  }
+  return r.json()
+}
 
 /**
  * Fetches the authenticated user's manual list with SWR.

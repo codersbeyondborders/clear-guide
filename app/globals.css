@@ -12,7 +12,7 @@
   /* Fonts */
   --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
 
-  /* ---------- Teal scale (primary accent) ---------- */
+  /* ---------- Teal scale ---------- */
   --color-teal-50:   #f0fdfa;
   --color-teal-100:  #ccfbf1;
   --color-teal-200:  #99f6e4;
@@ -36,7 +36,7 @@
   --color-slate-800: #1e293b;
   --color-slate-900: #0f172a;
 
-  /* ---------- Red scale (for error/X states) ---------- */
+  /* ---------- Red scale ---------- */
   --color-red-50:  #fef2f2;
   --color-red-100: #fee2e2;
   --color-red-500: #ef4444;
@@ -46,65 +46,7 @@
   --color-white: #ffffff;
   --color-black: #000000;
 
-  /* ---------- Color Tokens — Light mode ---------- */
-
-  /* Background / Surface */
-  --color-background:       #ffffff;
-  --color-background-subtle:#f8fafc;
-  --color-card:             #ffffff;
-  --color-card-hover:       #f1f5f9;
-
-  /* Foreground / Text */
-  --color-foreground:       #0f172a;
-  --color-muted-foreground: #64748b;
-
-  /* Primary accent — teal */
-  --color-primary:          #00d084;
-  --color-primary-hover:    #00b366;
-  --color-primary-foreground: #ffffff;
-  --color-primary-subtle:   #ecfdf5;
-
-  /* Border */
-  --color-border:           #e2e8f0;
-  --color-border-strong:    #cbd5e1;
-
-  /* Semantic states */
-  --color-destructive:      #dc2626;
-  --color-destructive-foreground: #ffffff;
-  --color-warning:          #d97706;
-  --color-success:          #16a34a;
-  --color-info:             #0284c7;
-
-  /* Focus ring */
-  --color-ring:             #00d084;
-
-  /* Radius */
-  --radius:                 0.5rem;
-}
-
-/* Dark-mode overrides */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background:       #0f172a;
-    --color-background-subtle:#1e293b;
-    --color-card:             #1e293b;
-    --color-card-hover:       #273548;
-
-    --color-foreground:       #f1f5f9;
-    --color-muted-foreground: #94a3b8;
-
-    --color-primary:          #10b981;
-    --color-primary-hover:    #059669;
-    --color-primary-foreground: #0f172a;
-    --color-primary-subtle:   #064e3b;
-
-    --color-border:           #1e293b;
-    --color-border-strong:    #334155;
-
-    --color-destructive:      #f87171;
-    --color-destructive-foreground: #0f172a;
-    --color-ring:             #10b981;
-  }
+  --radius: 0.5rem;
 }
 
 /* ==========================================================================
@@ -115,6 +57,8 @@
     color-scheme: light dark;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
   }
 
   body {
@@ -193,19 +137,19 @@
     font-size: 0.875rem;
     font-weight: 600;
     border-radius: var(--radius);
-    background-color: #FFFFFF;
-    color: #09bc7c;
-    border: 1px solid #09bc7c;
+    background-color: var(--color-card);
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
     cursor: pointer;
     transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
     white-space: nowrap;
   }
   .btn-outline:hover:not(:disabled) {
-    background-color: #09bc7c;
-    color: #FFFFFF;
-    border-color: #09bc7c;
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    border-color: var(--color-primary);
   }
-  .btn-outline:focus-visible { outline: 2px solid #09bc7c; outline-offset: 2px; }
+  .btn-outline:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
   /* Ghost button */
   .btn-ghost {
@@ -265,7 +209,7 @@
     border-radius: 9999px;
     border: 1px solid transparent;
   }
-  .badge-green  { background: #ecfdf5; color: #09bc7c; border-color: transparent; }
+  .badge-green  { background: var(--color-primary-subtle); color: var(--color-primary); border-color: transparent; }
   .badge-slate  { background: var(--color-background-subtle); color: var(--color-muted-foreground); border-color: var(--color-border); }
   .badge-red    { background: color-mix(in srgb, var(--color-destructive) 10%, transparent); color: var(--color-destructive); border-color: color-mix(in srgb, var(--color-destructive) 25%, transparent); }
 
@@ -332,4 +276,26 @@
   nav, footer, .no-print { display: none !important; }
   body { background: white; color: black; }
   a[href]::after { content: ' (' attr(href) ')'; }
+}
+
+/* ==========================================================================
+   Dark-mode–aware utility overrides
+   Tailwind v4 compiles bg-background → background-color: #ffffff (hardcoded).
+   By re-declaring these utilities inside @layer utilities they override the
+   compiled versions and use live var() references that respond to our
+   ThemeContext.applyTheme() inline style token switching.
+   ========================================================================== */
+@layer utilities {
+  .bg-background        { background-color: var(--color-background) !important; }
+  .bg-background-subtle { background-color: var(--color-background-subtle) !important; }
+  .bg-card              { background-color: var(--color-card) !important; }
+  .bg-card-hover        { background-color: var(--color-card-hover) !important; }
+  .text-foreground      { color: var(--color-foreground) !important; }
+  .text-muted-foreground{ color: var(--color-muted-foreground) !important; }
+  .text-primary         { color: var(--color-primary) !important; }
+  .bg-primary           { background-color: var(--color-primary) !important; }
+  .bg-primary-subtle    { background-color: var(--color-primary-subtle) !important; }
+  .border-border        { border-color: var(--color-border) !important; }
+  .border-border-strong { border-color: var(--color-border-strong) !important; }
+  .ring-ring            { --tw-ring-color: var(--color-ring) !important; }
 }

@@ -135,15 +135,19 @@ export function AIChatSupport({ manualId, highContrast = false, audioEnabled = f
   const micActive = voiceStatus === 'listening';
   const micBtn = micActive
     ? hc ? 'bg-yellow-400 text-black' : 'bg-red-500 text-white'
-    : hc ? 'border border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black' : 'border border-slate-200 text-slate-500 hover:border-emerald-400 hover:text-emerald-600';
+    : hc ? 'border border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary';
 
   return (
     <div
-      className={`flex flex-col h-full rounded-2xl border overflow-hidden ${hc ? 'bg-black border-yellow-400' : 'bg-white border-slate-100 shadow-sm'}`}
+      className={`flex flex-col h-full rounded-2xl border overflow-hidden ${hc ? 'bg-black border-yellow-400' : 'shadow-sm'}`}
+      style={hc ? undefined : { backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       role="region"
       aria-label="AI Support Chat"
     >
-      <div className={`flex items-center gap-3 px-5 py-4 border-b ${hc ? 'border-yellow-400 bg-gray-900' : 'border-slate-100 bg-emerald-500'}`}>
+      <div
+        className={`flex items-center gap-3 px-5 py-4 border-b ${hc ? 'border-yellow-400 bg-gray-900' : ''}`}
+        style={hc ? undefined : { borderColor: 'var(--color-border)', backgroundColor: 'var(--color-primary)' }}
+      >
         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${hc ? 'bg-yellow-400' : 'bg-white/20'}`}>
           <Bot className={`w-4 h-4 ${hc ? 'text-black' : 'text-white'}`} aria-hidden="true" />
         </div>
@@ -176,16 +180,30 @@ export function AIChatSupport({ manualId, highContrast = false, audioEnabled = f
                 <Bot className={`w-3.5 h-3.5 ${hc ? 'text-black' : 'text-emerald-600'}`} />
               </div>
             )}
-            <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-              msg.role === 'user'
-                ? hc ? 'bg-yellow-400 text-black rounded-tr-none' : 'bg-emerald-500 text-white rounded-tr-none'
-                : hc ? 'bg-gray-900 text-yellow-300 border border-yellow-400 rounded-tl-none' : 'bg-slate-50 text-slate-800 border border-slate-100 rounded-tl-none'
-            }`}>
+            <div
+              className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                msg.role === 'user'
+                  ? hc ? 'bg-yellow-400 text-black rounded-tr-none' : 'rounded-tr-none'
+                  : hc ? 'bg-gray-900 text-yellow-300 border border-yellow-400 rounded-tl-none' : 'rounded-tl-none border'
+              }`}
+              style={!hc ? {
+                backgroundColor: msg.role === 'user' ? 'var(--color-primary)' : 'var(--color-background-subtle)',
+                color: msg.role === 'user' ? 'var(--color-primary-foreground)' : 'var(--color-foreground)',
+                borderColor: msg.role === 'ai' ? 'var(--color-border)' : undefined,
+              } : undefined}
+            >
               {msg.content}
             </div>
             {msg.role === 'user' && (
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${hc ? 'bg-yellow-600' : 'bg-slate-200'}`} aria-hidden="true">
-                <User className={`w-3.5 h-3.5 ${hc ? 'text-black' : 'text-slate-600'}`} />
+              <div
+                className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${hc ? 'bg-yellow-600' : ''}`}
+                style={!hc ? { backgroundColor: 'var(--color-border)' } : undefined}
+                aria-hidden="true"
+              >
+                <User
+                  className={`w-3.5 h-3.5 ${hc ? 'text-black' : ''}`}
+                  style={!hc ? { color: 'var(--color-muted-foreground)' } : undefined}
+                />
               </div>
             )}
           </div>
@@ -196,7 +214,10 @@ export function AIChatSupport({ manualId, highContrast = false, audioEnabled = f
             <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${hc ? 'bg-yellow-400' : 'bg-emerald-100'}`}>
               <Bot className={`w-3.5 h-3.5 ${hc ? 'text-black' : 'text-emerald-600'}`} />
             </div>
-            <div className={`rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-1 ${hc ? 'bg-gray-900 border border-yellow-400' : 'bg-slate-50 border border-slate-100'}`}>
+            <div
+              className={`rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-1 ${hc ? 'bg-gray-900 border border-yellow-400' : 'border'}`}
+              style={!hc ? { backgroundColor: 'var(--color-background-subtle)', borderColor: 'var(--color-border)' } : undefined}
+            >
               {[0, 150, 300].map((delay) => (
                 <div key={delay} className={`w-2 h-2 rounded-full animate-bounce ${hc ? 'bg-yellow-400' : 'bg-emerald-400'}`} style={{ animationDelay: `${delay}ms` }} />
               ))}
@@ -217,7 +238,10 @@ export function AIChatSupport({ manualId, highContrast = false, audioEnabled = f
         <div ref={messagesEndRef} />
       </div>
 
-      <div className={`p-4 border-t ${hc ? 'border-yellow-400 bg-gray-900' : 'border-slate-100 bg-white'}`}>
+      <div
+        className={`p-4 border-t ${hc ? 'border-yellow-400 bg-gray-900' : ''}`}
+        style={!hc ? { borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)' } : undefined}
+      >
         <form onSubmit={handleSubmit} className="flex gap-2">
           {micSupported && (
             <button
@@ -236,11 +260,16 @@ export function AIChatSupport({ manualId, highContrast = false, audioEnabled = f
             placeholder={micActive ? 'Listening...' : 'Ask a question...'}
             disabled={isLoading || voiceStatus !== 'idle'}
             aria-label="Type your message"
-            className={`flex-1 h-10 px-4 rounded-full text-sm focus:outline-none focus:ring-2 transition ${
+            className={`flex-1 h-10 px-4 rounded-full text-sm focus:outline-none focus:ring-2 transition border ${
               hc
-                ? 'bg-black border border-yellow-400 text-yellow-400 placeholder:text-yellow-700 focus:ring-yellow-400'
-                : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-emerald-400 focus:border-transparent'
+                ? 'bg-black border-yellow-400 text-yellow-400 placeholder:text-yellow-700 focus:ring-yellow-400'
+                : 'focus:border-transparent'
             }`}
+            style={!hc ? {
+              backgroundColor: 'var(--color-background-subtle)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-foreground)',
+            } : undefined}
           />
           <button
             type="submit"

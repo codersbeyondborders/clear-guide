@@ -3,14 +3,21 @@
 import useSWR from 'swr'
 import type { DashboardAnalytics } from '@/lib/types'
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+const fetcher = async (url: string) => {
+  const r = await fetch(url)
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}))
+    throw new Error(body?.error ?? `Request failed: ${r.status}`)
+  }
+  return r.json()
+}
 
 /**
  * Fetches aggregate dashboard KPIs + recent activity feed.
  * Refreshes every 60 seconds and revalidates on focus.
  */
 export function useDashboardAnalytics() {
-  const { data, error, isLoading } = useSWR<DashboardAnalytics>(
+  const { data, error, isLoading, mutate } = useSWR<DashboardAnalytics>(
     '/api/dashboard/analytics',
     fetcher,
     {
@@ -27,5 +34,6 @@ export function useDashboardAnalytics() {
     recentActivity: data?.recentActivity ?? [],
     isLoading,
     isError: !!error,
+    retry: () => mutate(),
   }
 }

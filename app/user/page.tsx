@@ -11,11 +11,11 @@ import { ChevronDown, FlaskConical, ArrowRight } from 'lucide-react'
 // Demo products (seeded via /api/seed/demo-products)
 // ---------------------------------------------------------------------------
 const DEMO_PRODUCTS = [
-  { id: '9daccecf-ddd0-4ac3-b19a-3090ff90e7d0', name: 'BrewMaster Pro Smart Coffee Machine', model: 'BMP-X500', brand: 'BrewMaster' },
-  { id: '5e38b874-7b10-4b4e-b9c6-8e1a1c4f2d3a', name: 'GlideStep X2 Electric Wheelchair',    model: 'GSX2-LW',  brand: 'GlideStep'  },
-  { id: '1d3e6cd5-9f2a-4c1b-8e7d-2a4b6c8d0e1f', name: 'VertiDesk Apex Adjustable Work Desk', model: 'VDA-250',  brand: 'VertiDesk'  },
-  { id: '73be4028-1a2b-4c3d-5e6f-7a8b9c0d1e2f', name: 'SoundShield Pro Noise-Canceling Headphones', model: 'SSP-ANC4', brand: 'SoundShield' },
-  { id: '706376d2-3b4c-5d6e-7f8a-9b0c1d2e3f4a', name: 'AuraEar Clarity Digital Hearing Aid', model: 'AEC-RIC2', brand: 'AuraEar'   },
+  { id: '9daccecf-33e8-4c9c-b8d2-2fb21663f489', name: 'BrewMaster Pro Smart Coffee Machine',      model: 'BMP-X500',  brand: 'BrewMaster'  },
+  { id: '5e38b874-b179-4b80-82db-a96a75502ab6', name: 'GlideStep X2 Electric Wheelchair',         model: 'GSX2-LW',   brand: 'GlideStep'   },
+  { id: '1d3e6cd5-c847-4843-8950-f1c5aff356e5', name: 'VertiDesk Apex Adjustable Work Desk',      model: 'VDA-250',   brand: 'VertiDesk'   },
+  { id: '73be4028-91a6-428b-8d64-bbc8332fd9b7', name: 'SoundShield Pro Noise-Canceling Headphones', model: 'SSP-ANC4', brand: 'SoundShield' },
+  { id: '706376d2-1da6-4a2f-ac50-0962aa761061', name: 'AuraEar Clarity Digital Hearing Aid',      model: 'AEC-RIC2',  brand: 'AuraEar'     },
 ]
 
 // Brand initials background colours — fixed palette for consistency

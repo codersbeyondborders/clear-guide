@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Menu } from 'lucide-react'
 import { DashboardSidebar } from './DashboardSidebar'
 import Link from 'next/link'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 // ---------------------------------------------------------------------------
 // Mobile top header logo
@@ -85,13 +86,16 @@ export function DashboardShell({ children, displayName, initials, onLogout }: Da
 
           <MobileLogo />
 
-          {/* User avatar */}
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-            style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
-            aria-label={`Signed in as ${displayName}`}
-          >
-            {initials}
+          {/* Theme toggle + user avatar */}
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+              style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+              aria-label={`Signed in as ${displayName}`}
+            >
+              {initials}
+            </div>
           </div>
         </header>
 

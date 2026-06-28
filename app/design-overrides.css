@@ -1,74 +1,76 @@
-/* Design refinement overrides */
+/* Design refinement overrides — all hardcoded colours replaced with CSS tokens */
 
 /* ─── Section background colors ─── */
 main#main-content > section.py-16.md\:py-20:nth-of-type(3) {
-  background-color: #ffffff !important;
+  background-color: var(--color-background) !important;
 }
 
 main#main-content > section.py-16.md\:py-20:nth-of-type(5) {
-  background-color: #ffffff !important;
+  background-color: var(--color-background) !important;
 }
 
+/* Intentionally dark "Seamless Integration" section — stays dark in both modes */
 main#main-content > section.py-16.md\:py-20:nth-of-type(6) {
-  background-color: rgb(15, 23, 42) !important;
+  background-color: #0f172a !important;
 }
 
 main#main-content > section.py-16.md\:py-20:nth-of-type(7) {
-  background-color: rgb(248, 250, 252) !important;
+  background-color: var(--color-background-subtle) !important;
 }
 
 main#main-content > section.py-16.md\:py-24:nth-of-type(10) {
-  background-color: #ffffff !important;
+  background-color: var(--color-background) !important;
   border-style: none !important;
 }
 
 /* ─── Features section styling ─── */
 section#features {
-  background-color: #f8fafc !important;
+  background-color: var(--color-background-subtle) !important;
 }
 
 section#features > div.container > div.grid.sm\:grid-cols-2 > article.card.p-6 {
-  background-color: #ffffff !important;
+  background-color: var(--color-card) !important;
   border-style: none !important;
 }
 
 /* ─── Pricing section styling ─── */
 section#pricing {
-  background-color: #ffffff !important;
+  background-color: var(--color-background) !important;
 }
 
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7 {
-  background-color: rgb(248, 250, 252) !important;
-  border-color: #dedfe1 !important;
+  background-color: var(--color-background-subtle) !important;
+  border-color: var(--color-border) !important;
   border-width: 2px !important;
-  color: #000000 !important;
+  color: var(--color-foreground) !important;
 }
 
+/* Pro card — intentionally dark in both modes */
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(2) {
-  background-color: rgb(15, 23, 42) !important;
+  background-color: #0f172a !important;
   border: none !important;
   color: #ffffff !important;
 }
 
-/* Pricing cards - Free and Enterprise */
+/* Pricing cards - Free and Enterprise text */
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(1) > div:nth-of-type(1) > p.text-xs.font-semibold,
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(3) > div:nth-of-type(1) > p.text-xs.font-semibold {
-  color: #000000 !important;
+  color: var(--color-foreground) !important;
 }
 
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(1) > div:nth-of-type(1) > div.flex.items-baseline > span.text-4xl.font-bold,
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(3) > div:nth-of-type(1) > div.flex.items-baseline > span.text-4xl.font-bold {
-  color: #000000 !important;
+  color: var(--color-foreground) !important;
 }
 
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(1) > div:nth-of-type(1) > p.text-xs.leading-relaxed,
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(3) > div:nth-of-type(1) > p.text-xs.leading-relaxed {
-  color: #000000 !important;
+  color: var(--color-muted-foreground) !important;
 }
 
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(1) > ul.flex.flex-col > li.flex.items-center,
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(3) > ul.flex.flex-col > li.flex.items-center {
-  color: #000000 !important;
+  color: var(--color-foreground) !important;
 }
 
 /* Pricing Pro card text */
@@ -87,8 +89,8 @@ section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl
 /* Pricing buttons */
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(1) > a.btn-outline,
 section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl.p-7:nth-of-type(3) > a.btn-outline {
-  background-color: rgb(16, 185, 129) !important;
-  color: #ffffff !important;
+  background-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
   border-style: none !important;
 }
 
@@ -98,17 +100,17 @@ section#pricing > div.container > div.grid.md\:grid-cols-3 > article.rounded-2xl
 
 /* ─── Tool section cards ─── */
 main#main-content > section.py-16.md\:py-20:nth-of-type(3) > div.container > div.grid.md\:grid-cols-2 > div.grid.grid-cols-1:nth-of-type(2) > article.card.p-5 {
-  background-color: #f8fafc !important;
+  background-color: var(--color-background-subtle) !important;
   border-style: none !important;
 }
 
 /* ─── Before/After section ─── */
 main#main-content > section.py-16.md\:py-20:nth-of-type(5) > div.container > div.grid.md\:grid-cols-2 > div.card.p-6:nth-of-type(2) > div.grid.grid-cols-2:nth-of-type(3) > div.rounded-xl.border {
-  background-color: rgb(248, 250, 252) !important;
+  background-color: var(--color-background-subtle) !important;
   border-style: none !important;
 }
 
-/* ─── Seamless Integration section ─── */
+/* ─── Seamless Integration section — always on dark bg ─── */
 h2#mfr-heading {
   color: #ffffff !important;
 }
@@ -127,12 +129,12 @@ main#main-content > section.py-16.md\:py-20:nth-of-type(6) > div.container > div
 
 /* ─── Stats bar ─── */
 main#main-content > section:nth-of-type(2) > div.container.py-8 > dl.grid.grid-cols-2 > div.flex.flex-col > dd.text-xs {
-  color: #d0fae4 !important;
+  color: var(--color-muted-foreground) !important;
 }
 
 /* ─── FAQ section ─── */
 section#faq {
-  background-color: rgb(248, 250, 252) !important;
+  background-color: var(--color-background-subtle) !important;
 }
 
 section#faq > div.container > div.grid.md\:grid-cols-\[260px_1fr\] > div.flex.flex-col:nth-of-type(2) > div.py-5 {
@@ -145,12 +147,12 @@ section#faq > div.container > div.grid.md\:grid-cols-\[260px_1fr\] > div.flex.fl
 
 /* ─── Feature badges ─── */
 section#features > div.container > div.grid.sm\:grid-cols-2 > article.card.p-6 > div.min-w-0:nth-of-type(2) > div.flex.flex-wrap > span.badge.badge-green {
-  color: #d0fae4 !important;
-  background-color: #ffffee !important;
+  color: var(--color-primary) !important;
+  background-color: var(--color-primary-subtle) !important;
 }
 
 /* ─── CTA button ─── */
 main#main-content > section.py-16.md\:py-24:nth-of-type(10) > div.container.text-center > div.flex.flex-wrap > a.btn-outline.text-sm {
-  background-color: rgb(248, 250, 252) !important;
-  color: #000000 !important;
+  background-color: var(--color-background-subtle) !important;
+  color: var(--color-foreground) !important;
 }
