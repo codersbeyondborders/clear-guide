@@ -8,45 +8,11 @@
    Fonts: Inter (sans) only — one typeface, multiple weights
    ========================================================================== */
 
-/* ==========================================================================
-   Runtime design tokens — these are the actual switchable values.
-   ThemeContext.applyTheme() overwrites these on document.documentElement.style
-   using setProperty(), which always wins over any stylesheet.
-   Light-mode defaults live here; dark-mode values are injected at runtime.
-   ========================================================================== */
-:root {
-  /* Backgrounds */
-  --color-background:            #ffffff;
-  --color-background-subtle:     #f8fafc;
-  --color-card:                  #ffffff;
-  --color-card-hover:            #f1f5f9;
-  /* Text */
-  --color-foreground:            #0f172a;
-  --color-muted-foreground:      #64748b;
-  /* Primary */
-  --color-primary:               #00d084;
-  --color-primary-hover:         #00b366;
-  --color-primary-foreground:    #ffffff;
-  --color-primary-subtle:        #ecfdf5;
-  /* Borders */
-  --color-border:                #e2e8f0;
-  --color-border-strong:         #cbd5e1;
-  /* States */
-  --color-destructive:           #dc2626;
-  --color-destructive-foreground:#ffffff;
-  --color-warning:               #d97706;
-  --color-success:               #16a34a;
-  --color-info:                  #0284c7;
-  --color-ring:                  #00d084;
-  /* Radius */
-  --radius:                      0.5rem;
-}
-
 @theme inline {
   /* Fonts */
   --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
 
-  /* ---------- Teal scale (primary accent) ---------- */
+  /* ---------- Teal scale ---------- */
   --color-teal-50:   #f0fdfa;
   --color-teal-100:  #ccfbf1;
   --color-teal-200:  #99f6e4;
@@ -80,81 +46,11 @@
   --color-white: #ffffff;
   --color-black: #000000;
 
-  /* ---------- Semantic tokens — point to runtime CSS vars ----------
-     Tailwind compiles `bg-background` → `background-color: var(--color-background)`
-     because the value here is a var() reference, not a hardcoded hex.
-     At runtime, document.documentElement.style overrides --color-background
-     and all var() usages across the whole document update instantly.
-  ------------------------------------------------------------------- */
-  --color-background:            var(--color-background);
-  --color-background-subtle:     var(--color-background-subtle);
-  --color-card:                  var(--color-card);
-  --color-card-hover:            var(--color-card-hover);
-  --color-foreground:            var(--color-foreground);
-  --color-muted-foreground:      var(--color-muted-foreground);
-  --color-primary:               var(--color-primary);
-  --color-primary-hover:         var(--color-primary-hover);
-  --color-primary-foreground:    var(--color-primary-foreground);
-  --color-primary-subtle:        var(--color-primary-subtle);
-  --color-border:                var(--color-border);
-  --color-border-strong:         var(--color-border-strong);
-  --color-destructive:           var(--color-destructive);
-  --color-destructive-foreground:var(--color-destructive-foreground);
-  --color-ring:                  var(--color-ring);
-
   --radius: 0.5rem;
 }
 
 /* ==========================================================================
-   Dark mode — defined OUTSIDE @theme so they override via normal cascade.
-   Tailwind v4 @theme inline tokens sit in @layer theme; rules outside any
-   @layer always win over layered rules (unlayered > layered precedence).
-   ========================================================================== */
-
-/* OS-level dark preference — only applies when user hasn't pinned light */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-background:            #0f172a;
-    --color-background-subtle:     #1e293b;
-    --color-card:                  #1e293b;
-    --color-card-hover:            #273548;
-    --color-foreground:            #f1f5f9;
-    --color-muted-foreground:      #94a3b8;
-    --color-primary:               #10b981;
-    --color-primary-hover:         #059669;
-    --color-primary-foreground:    #0f172a;
-    --color-primary-subtle:        #064e3b;
-    --color-border:                #334155;
-    --color-border-strong:         #475569;
-    --color-destructive:           #f87171;
-    --color-destructive-foreground:#0f172a;
-    --color-ring:                  #10b981;
-  }
-}
-
-/* Manual dark — data-theme="dark" attribute on <html> */
-:root[data-theme="dark"] {
-  --color-background:            #0f172a;
-  --color-background-subtle:     #1e293b;
-  --color-card:                  #1e293b;
-  --color-card-hover:            #273548;
-  --color-foreground:            #f1f5f9;
-  --color-muted-foreground:      #94a3b8;
-  --color-primary:               #10b981;
-  --color-primary-hover:         #059669;
-  --color-primary-foreground:    #0f172a;
-  --color-primary-subtle:        #064e3b;
-  --color-border:                #334155;
-  --color-border-strong:         #475569;
-  --color-destructive:           #f87171;
-  --color-destructive-foreground:#0f172a;
-  --color-ring:                  #10b981;
-}
-
-/* ==========================================================================
-   Base resets + Dark mode
-   Dark tokens live inside @layer base so they beat @layer theme (Tailwind v4
-   processes layers in order: theme → base → components → utilities).
+   Base resets
    ========================================================================== */
 @layer base {
   html {

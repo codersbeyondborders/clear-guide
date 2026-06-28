@@ -39,48 +39,63 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} scroll-smooth`} suppressHydrationWarning>
       <head>
         {/*
-          FOWT prevention — runs synchronously before first paint.
-          Sets data-theme attribute (drives CSS token overrides) and .dark
-          class (drives Tailwind dark: utilities) on <html> immediately.
-        */}
-        {/*
-          Semantic token utilities — server-rendered inline <style> bypasses
-          Tailwind's build pipeline entirely. These unlayered rules always win
-          the cascade over @layer utilities, making bg-background, bg-card,
-          text-foreground, etc. respond to runtime CSS variable changes.
+          CSS token overrides — server-rendered so they are present before
+          any paint. next-themes adds the .dark class to <html>; these rules
+          use CSS custom properties so all var(--color-*) references across
+          the app respond to the .dark class instantly.
         */}
         <style dangerouslySetInnerHTML={{ __html: `
-          :root .bg-background, .bg-background { background-color: var(--color-background) !important; }
-          :root .bg-background-subtle, .bg-background-subtle { background-color: var(--color-background-subtle) !important; }
-          :root .bg-card, .bg-card { background-color: var(--color-card) !important; }
-          :root .text-foreground, .text-foreground { color: var(--color-foreground) !important; }
-          :root .text-muted-foreground, .text-muted-foreground { color: var(--color-muted-foreground) !important; }
-          :root .text-primary, .text-primary { color: var(--color-primary) !important; }
-          :root .text-primary-foreground, .text-primary-foreground { color: var(--color-primary-foreground) !important; }
-          :root .bg-primary, .bg-primary { background-color: var(--color-primary) !important; }
-          :root .bg-primary-subtle, .bg-primary-subtle { background-color: var(--color-primary-subtle) !important; }
-          :root .border-border, .border-border { border-color: var(--color-border) !important; }
-          :root .border-border-strong, .border-border-strong { border-color: var(--color-border-strong) !important; }
-          :root .card, .card { background-color: var(--color-card) !important; border-color: var(--color-border) !important; }
-          :root .hover\\:bg-background-subtle:hover { background-color: var(--color-background-subtle) !important; }
-          :root .hover\\:bg-card-hover:hover { background-color: var(--color-card-hover) !important; }
+          /* Light tokens (default) */
+          :root {
+            --color-background: #ffffff;
+            --color-background-subtle: #f8fafc;
+            --color-card: #ffffff;
+            --color-card-hover: #f1f5f9;
+            --color-foreground: #0f172a;
+            --color-muted-foreground: #64748b;
+            --color-primary: #00d084;
+            --color-primary-hover: #00b366;
+            --color-primary-foreground: #ffffff;
+            --color-primary-subtle: #ecfdf5;
+            --color-border: #e2e8f0;
+            --color-border-strong: #cbd5e1;
+            --color-destructive: #dc2626;
+            --color-destructive-foreground: #ffffff;
+            --color-ring: #00d084;
+          }
+          /* Dark tokens — applied when next-themes adds .dark to <html> */
+          :root.dark {
+            --color-background: #0f172a;
+            --color-background-subtle: #1e293b;
+            --color-card: #1e293b;
+            --color-card-hover: #273548;
+            --color-foreground: #f1f5f9;
+            --color-muted-foreground: #94a3b8;
+            --color-primary: #10b981;
+            --color-primary-hover: #059669;
+            --color-primary-foreground: #0f172a;
+            --color-primary-subtle: #064e3b;
+            --color-border: #334155;
+            --color-border-strong: #475569;
+            --color-destructive: #f87171;
+            --color-destructive-foreground: #0f172a;
+            --color-ring: #10b981;
+          }
+          /* Semantic utility overrides — ensure Tailwind compiled utilities
+             use live var() values rather than hardcoded hex at build time. */
+          .bg-background        { background-color: var(--color-background) !important; }
+          .bg-background-subtle { background-color: var(--color-background-subtle) !important; }
+          .bg-card              { background-color: var(--color-card) !important; }
+          .text-foreground      { color: var(--color-foreground) !important; }
+          .text-muted-foreground{ color: var(--color-muted-foreground) !important; }
+          .text-primary         { color: var(--color-primary) !important; }
+          .text-primary-foreground { color: var(--color-primary-foreground) !important; }
+          .bg-primary           { background-color: var(--color-primary) !important; }
+          .bg-primary-subtle    { background-color: var(--color-primary-subtle) !important; }
+          .border-border        { border-color: var(--color-border) !important; }
+          .border-border-strong { border-color: var(--color-border-strong) !important; }
+          .card                 { background-color: var(--color-card) !important; border-color: var(--color-border) !important; }
         `}} />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{
-              var t=localStorage.getItem('cg-theme')||'system';
-              var d=document.documentElement;
-              var dark=(t==='dark')||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
-              var L={'--color-background':'#ffffff','--color-background-subtle':'#f8fafc','--color-card':'#ffffff','--color-card-hover':'#f1f5f9','--color-foreground':'#0f172a','--color-muted-foreground':'#64748b','--color-primary':'#00d084','--color-primary-hover':'#00b366','--color-primary-foreground':'#ffffff','--color-primary-subtle':'#ecfdf5','--color-border':'#e2e8f0','--color-border-strong':'#cbd5e1','--color-destructive':'#dc2626','--color-destructive-foreground':'#ffffff','--color-ring':'#00d084'};
-              var K={'--color-background':'#0f172a','--color-background-subtle':'#1e293b','--color-card':'#1e293b','--color-card-hover':'#273548','--color-foreground':'#f1f5f9','--color-muted-foreground':'#94a3b8','--color-primary':'#10b981','--color-primary-hover':'#059669','--color-primary-foreground':'#0f172a','--color-primary-subtle':'#064e3b','--color-border':'#334155','--color-border-strong':'#475569','--color-destructive':'#f87171','--color-destructive-foreground':'#0f172a','--color-ring':'#10b981'};
-              var tokens=dark?K:L;
-              Object.keys(tokens).forEach(function(p){d.style.setProperty(p,tokens[p]);});
-              d.setAttribute('data-theme',t==='system'?(dark?'dark':'light'):t);
-              if(dark){d.classList.add('dark');d.style.colorScheme='dark';}
-              else{d.classList.remove('dark');d.style.colorScheme='light';}
-            }catch(e){}})();`,
-          }}
-        />
       </head>
       <body className="font-sans antialiased">
         {/* Skip to main content — WCAG 2.4.1 */}

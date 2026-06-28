@@ -1,32 +1,5 @@
 /* Design refinement overrides — all hardcoded colours replaced with CSS tokens */
 
-/* ==========================================================================
-   Semantic token overrides — high-specificity selectors
-   Tailwind v4 compiles bg-background → rgb(255,255,255) at build time.
-   We use :where(:root) nesting to add extra specificity that beats the
-   compiled utilities while staying within Tailwind's own layer system.
-   ThemeContext.applyTheme sets these tokens inline on <html>, so var()
-   references always resolve to the correct runtime value.
-   ========================================================================== */
-
-/* Use :root wrapping to boost specificity above plain class selectors */
-:root .bg-background        { background-color: var(--color-background); }
-:root .bg-background-subtle { background-color: var(--color-background-subtle); }
-:root .bg-card              { background-color: var(--color-card); }
-:root .hover\:bg-background-subtle:hover { background-color: var(--color-background-subtle); }
-:root .hover\:bg-card-hover:hover        { background-color: var(--color-card-hover); }
-:root .text-foreground       { color: var(--color-foreground); }
-:root .text-muted-foreground { color: var(--color-muted-foreground); }
-:root .text-primary          { color: var(--color-primary); }
-:root .text-primary-foreground { color: var(--color-primary-foreground); }
-:root .bg-primary            { background-color: var(--color-primary); }
-:root .bg-primary-subtle     { background-color: var(--color-primary-subtle); }
-:root .hover\:bg-primary-hover:hover { background-color: var(--color-primary-hover); }
-:root .border-border         { border-color: var(--color-border); }
-:root .border-border-strong  { border-color: var(--color-border-strong); }
-/* Card shared component */
-:root .card { background-color: var(--color-card); border-color: var(--color-border); }
-
 /* ─── Section background colors ─── */
 main#main-content > section.py-16.md\:py-20:nth-of-type(3) {
   background-color: var(--color-background) !important;
