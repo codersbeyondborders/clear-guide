@@ -9,8 +9,8 @@ import { ManualSearchForm } from '@/components/ManualSearchForm'
 type Tab = 'qr' | 'manual'
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
-  { key: 'qr',     label: 'Scan QR Code',     icon: QrCode           },
-  { key: 'manual', label: 'Enter Details',     icon: SlidersHorizontal },
+  { key: 'qr',     label: 'Scan QR Code', icon: QrCode            },
+  { key: 'manual', label: 'Enter Details', icon: SlidersHorizontal },
 ]
 
 export function FindYourGuideSection() {
@@ -21,27 +21,22 @@ export function FindYourGuideSection() {
       id="find-guide"
       aria-labelledby="find-guide-heading"
       className="py-16 md:py-24"
-      style={{ backgroundColor: '#0f172a', borderTop: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ backgroundColor: '#0f172a', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
     >
       <div className="container">
-        {/* ── Header ──────────────────────────────────────────────────── */}
+
+        {/* ── Header ────────────────────────────────────────────────── */}
         <div className="max-w-xl mb-12">
-          {/* Eyebrow */}
           <div
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 border"
-            style={{
-              backgroundColor: 'rgba(9,188,124,0.12)',
-              borderColor: 'rgba(9,188,124,0.3)',
-              color: '#09bc7c',
-            }}
+            style={{ backgroundColor: 'rgba(9,188,124,0.12)', borderColor: 'rgba(9,188,124,0.3)', color: '#09bc7c' }}
           >
             <QrCode className="w-3 h-3" aria-hidden="true" />
             For End Users
           </div>
-
           <h2
             id="find-guide-heading"
-            className="text-3xl md:text-4xl font-bold leading-tight mb-3"
+            className="text-3xl md:text-4xl font-bold leading-tight text-balance mb-3"
             style={{ color: '#f1f5f9' }}
           >
             Find Your Product Guide
@@ -52,14 +47,14 @@ export function FindYourGuideSection() {
           </p>
         </div>
 
-        {/* ── Two-panel card ───────────────────────────────────────────── */}
+        {/* ── Card ────────────────────────────────────────────────────── */}
         <div
           className="max-w-4xl rounded-3xl overflow-hidden border"
           style={{ borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#1e293b' }}
         >
-          {/* Tab switcher (top bar) */}
+          {/* Mobile-only tab bar (hidden on md+) */}
           <div
-            className="flex items-center border-b"
+            className="flex md:hidden border-b"
             style={{ borderColor: 'rgba(255,255,255,0.07)' }}
             role="tablist"
             aria-label="How to find your guide"
@@ -70,18 +65,15 @@ export function FindYourGuideSection() {
                 <button
                   key={key}
                   role="tab"
-                  id={`tab-${key}`}
+                  id={`tab-mobile-${key}`}
                   aria-selected={isActive}
-                  aria-controls={`panel-${key}`}
+                  aria-controls={`panel-mobile-${key}`}
                   onClick={() => setActiveTab(key)}
-                  className="flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset"
-                  style={{
-                    color: isActive ? '#09bc7c' : 'rgba(241,245,249,0.45)',
-                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 text-sm font-semibold transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                  style={{ color: isActive ? '#09bc7c' : 'rgba(241,245,249,0.45)' }}
                 >
                   <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
                   {label}
-                  {/* Active indicator bar */}
                   {isActive && (
                     <span
                       className="absolute inset-x-0 bottom-0 h-0.5"
@@ -94,16 +86,17 @@ export function FindYourGuideSection() {
             })}
           </div>
 
-          {/* Panel body — split on desktop */}
-          <div className="md:grid md:grid-cols-[1fr_1px_1fr]">
+          {/* Panel body */}
+          {/* Mobile: show one panel at a time via display none */}
+          {/* Desktop (md+): always show both panels side-by-side via grid */}
+          <div className="md:grid md:grid-cols-[1fr_1px_1fr] md:divide-y-0">
 
-            {/* ── QR panel ────────────────────────────────────────────── */}
+            {/* ── QR panel ──────────────────────────────────────────── */}
             <div
-              id="panel-qr"
+              id="panel-mobile-qr"
               role="tabpanel"
-              aria-labelledby="tab-qr"
-              hidden={activeTab !== 'qr'}
-              className="p-8 md:p-10 flex flex-col items-center gap-6 text-center"
+              aria-labelledby="tab-mobile-qr"
+              className={`p-8 md:p-10 flex flex-col items-center gap-6 text-center md:flex ${activeTab === 'qr' ? 'flex' : 'hidden'}`}
             >
               <QRCodeDisplay targetId="demo-qr-123" />
 
@@ -136,47 +129,45 @@ export function FindYourGuideSection() {
 
             {/* Vertical divider — desktop only */}
             <div
-              className="hidden md:block"
-              style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}
+              className="hidden md:block self-stretch"
+              style={{ backgroundColor: 'rgba(255,255,255,0.07)', width: '1px' }}
               aria-hidden="true"
             />
 
-            {/* ── Manual search panel ─────────────────────────────────── */}
+            {/* ── Manual search panel ───────────────────────────────── */}
             <div
-              id="panel-manual"
+              id="panel-mobile-manual"
               role="tabpanel"
-              aria-labelledby="tab-manual"
-              hidden={activeTab !== 'manual'}
-              className="p-8 md:p-10"
+              aria-labelledby="tab-mobile-manual"
+              className={`p-8 md:p-10 md:flex md:flex-col md:justify-center ${activeTab === 'manual' ? 'flex flex-col' : 'hidden md:flex'}`}
             >
               <p className="text-xs font-semibold uppercase tracking-wider mb-5" style={{ color: 'rgba(241,245,249,0.35)' }}>
                 Search by product details
               </p>
-              {/* Render ManualSearchForm inside a dark-surface override wrapper */}
               <div className="find-guide-form-surface">
                 <ManualSearchForm />
               </div>
             </div>
           </div>
 
-          {/* ── Bottom CTA strip ──────────────────────────────────────── */}
+          {/* ── Bottom strip ────────────────────────────────────────── */}
           <div
-            className="flex items-center justify-between gap-4 px-8 py-4 border-t flex-wrap"
+            className="flex flex-wrap items-center justify-between gap-3 px-8 py-4 border-t"
             style={{ borderColor: 'rgba(255,255,255,0.07)' }}
           >
             <p className="text-xs" style={{ color: 'rgba(241,245,249,0.35)' }}>
-              Already have an account?{' '}
+              Are you a manufacturer?{' '}
               <Link
                 href="/manufacturer/login"
-                className="font-semibold transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                className="font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                 style={{ color: '#09bc7c' }}
               >
-                Manufacturer dashboard →
+                Go to dashboard &rarr;
               </Link>
             </p>
             <Link
               href="/user"
-              className="text-xs font-semibold transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+              className="text-xs font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
               style={{ color: 'rgba(241,245,249,0.45)' }}
             >
               Open full product finder
@@ -184,7 +175,7 @@ export function FindYourGuideSection() {
           </div>
         </div>
 
-        {/* ── "Works on all devices" pill row ─────────────────────────── */}
+        {/* ── Device pills ────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center gap-3 mt-8">
           {['No app required', 'Works on iOS & Android', 'Accessible & screen-reader friendly'].map((label) => (
             <span
@@ -192,15 +183,12 @@ export function FindYourGuideSection() {
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border"
               style={{ borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(241,245,249,0.45)' }}
             >
-              <span
-                className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ backgroundColor: '#09bc7c' }}
-                aria-hidden="true"
-              />
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: '#09bc7c' }} aria-hidden="true" />
               {label}
             </span>
           ))}
         </div>
+
       </div>
     </section>
   )
