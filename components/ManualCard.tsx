@@ -46,7 +46,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
 function CoverThumbnail({ coverImage, productName }: { coverImage: string | null; productName: string }) {
   if (coverImage) {
     return (
-      <div className="relative w-full h-36 overflow-hidden rounded-t-2xl bg-slate-100">
+      <div className="relative w-full h-36 overflow-hidden rounded-t-2xl" style={{ backgroundColor: 'var(--color-background-subtle)' }}>
         <Image
           src={coverImage}
           alt={`Cover image for ${productName}`}

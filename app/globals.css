@@ -8,6 +8,40 @@
    Fonts: Inter (sans) only — one typeface, multiple weights
    ========================================================================== */
 
+/* ==========================================================================
+   Runtime design tokens — these are the actual switchable values.
+   ThemeContext.applyTheme() overwrites these on document.documentElement.style
+   using setProperty(), which always wins over any stylesheet.
+   Light-mode defaults live here; dark-mode values are injected at runtime.
+   ========================================================================== */
+:root {
+  /* Backgrounds */
+  --color-background:            #ffffff;
+  --color-background-subtle:     #f8fafc;
+  --color-card:                  #ffffff;
+  --color-card-hover:            #f1f5f9;
+  /* Text */
+  --color-foreground:            #0f172a;
+  --color-muted-foreground:      #64748b;
+  /* Primary */
+  --color-primary:               #00d084;
+  --color-primary-hover:         #00b366;
+  --color-primary-foreground:    #ffffff;
+  --color-primary-subtle:        #ecfdf5;
+  /* Borders */
+  --color-border:                #e2e8f0;
+  --color-border-strong:         #cbd5e1;
+  /* States */
+  --color-destructive:           #dc2626;
+  --color-destructive-foreground:#ffffff;
+  --color-warning:               #d97706;
+  --color-success:               #16a34a;
+  --color-info:                  #0284c7;
+  --color-ring:                  #00d084;
+  /* Radius */
+  --radius:                      0.5rem;
+}
+
 @theme inline {
   /* Fonts */
   --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
@@ -36,7 +70,7 @@
   --color-slate-800: #1e293b;
   --color-slate-900: #0f172a;
 
-  /* ---------- Red scale (for error/X states) ---------- */
+  /* ---------- Red scale ---------- */
   --color-red-50:  #fef2f2;
   --color-red-100: #fee2e2;
   --color-red-500: #ef4444;
@@ -46,40 +80,29 @@
   --color-white: #ffffff;
   --color-black: #000000;
 
-  /* ---------- Color Tokens — Light mode ---------- */
+  /* ---------- Semantic tokens — point to runtime CSS vars ----------
+     Tailwind compiles `bg-background` → `background-color: var(--color-background)`
+     because the value here is a var() reference, not a hardcoded hex.
+     At runtime, document.documentElement.style overrides --color-background
+     and all var() usages across the whole document update instantly.
+  ------------------------------------------------------------------- */
+  --color-background:            var(--color-background);
+  --color-background-subtle:     var(--color-background-subtle);
+  --color-card:                  var(--color-card);
+  --color-card-hover:            var(--color-card-hover);
+  --color-foreground:            var(--color-foreground);
+  --color-muted-foreground:      var(--color-muted-foreground);
+  --color-primary:               var(--color-primary);
+  --color-primary-hover:         var(--color-primary-hover);
+  --color-primary-foreground:    var(--color-primary-foreground);
+  --color-primary-subtle:        var(--color-primary-subtle);
+  --color-border:                var(--color-border);
+  --color-border-strong:         var(--color-border-strong);
+  --color-destructive:           var(--color-destructive);
+  --color-destructive-foreground:var(--color-destructive-foreground);
+  --color-ring:                  var(--color-ring);
 
-  /* Background / Surface */
-  --color-background:       #ffffff;
-  --color-background-subtle:#f8fafc;
-  --color-card:             #ffffff;
-  --color-card-hover:       #f1f5f9;
-
-  /* Foreground / Text */
-  --color-foreground:       #0f172a;
-  --color-muted-foreground: #64748b;
-
-  /* Primary accent — teal */
-  --color-primary:          #00d084;
-  --color-primary-hover:    #00b366;
-  --color-primary-foreground: #ffffff;
-  --color-primary-subtle:   #ecfdf5;
-
-  /* Border */
-  --color-border:           #e2e8f0;
-  --color-border-strong:    #cbd5e1;
-
-  /* Semantic states */
-  --color-destructive:      #dc2626;
-  --color-destructive-foreground: #ffffff;
-  --color-warning:          #d97706;
-  --color-success:          #16a34a;
-  --color-info:             #0284c7;
-
-  /* Focus ring */
-  --color-ring:             #00d084;
-
-  /* Radius */
-  --radius:                 0.5rem;
+  --radius: 0.5rem;
 }
 
 /* ==========================================================================
@@ -357,4 +380,26 @@
   nav, footer, .no-print { display: none !important; }
   body { background: white; color: black; }
   a[href]::after { content: ' (' attr(href) ')'; }
+}
+
+/* ==========================================================================
+   Dark-mode–aware utility overrides
+   Tailwind v4 compiles bg-background → background-color: #ffffff (hardcoded).
+   By re-declaring these utilities inside @layer utilities they override the
+   compiled versions and use live var() references that respond to our
+   ThemeContext.applyTheme() inline style token switching.
+   ========================================================================== */
+@layer utilities {
+  .bg-background        { background-color: var(--color-background) !important; }
+  .bg-background-subtle { background-color: var(--color-background-subtle) !important; }
+  .bg-card              { background-color: var(--color-card) !important; }
+  .bg-card-hover        { background-color: var(--color-card-hover) !important; }
+  .text-foreground      { color: var(--color-foreground) !important; }
+  .text-muted-foreground{ color: var(--color-muted-foreground) !important; }
+  .text-primary         { color: var(--color-primary) !important; }
+  .bg-primary           { background-color: var(--color-primary) !important; }
+  .bg-primary-subtle    { background-color: var(--color-primary-subtle) !important; }
+  .border-border        { border-color: var(--color-border) !important; }
+  .border-border-strong { border-color: var(--color-border-strong) !important; }
+  .ring-ring            { --tw-ring-color: var(--color-ring) !important; }
 }

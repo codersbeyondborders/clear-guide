@@ -43,6 +43,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Sets data-theme attribute (drives CSS token overrides) and .dark
           class (drives Tailwind dark: utilities) on <html> immediately.
         */}
+        {/*
+          Semantic token utilities — server-rendered inline <style> bypasses
+          Tailwind's build pipeline entirely. These unlayered rules always win
+          the cascade over @layer utilities, making bg-background, bg-card,
+          text-foreground, etc. respond to runtime CSS variable changes.
+        */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          :root .bg-background, .bg-background { background-color: var(--color-background) !important; }
+          :root .bg-background-subtle, .bg-background-subtle { background-color: var(--color-background-subtle) !important; }
+          :root .bg-card, .bg-card { background-color: var(--color-card) !important; }
+          :root .text-foreground, .text-foreground { color: var(--color-foreground) !important; }
+          :root .text-muted-foreground, .text-muted-foreground { color: var(--color-muted-foreground) !important; }
+          :root .text-primary, .text-primary { color: var(--color-primary) !important; }
+          :root .text-primary-foreground, .text-primary-foreground { color: var(--color-primary-foreground) !important; }
+          :root .bg-primary, .bg-primary { background-color: var(--color-primary) !important; }
+          :root .bg-primary-subtle, .bg-primary-subtle { background-color: var(--color-primary-subtle) !important; }
+          :root .border-border, .border-border { border-color: var(--color-border) !important; }
+          :root .border-border-strong, .border-border-strong { border-color: var(--color-border-strong) !important; }
+          :root .card, .card { background-color: var(--color-card) !important; border-color: var(--color-border) !important; }
+          :root .hover\\:bg-background-subtle:hover { background-color: var(--color-background-subtle) !important; }
+          :root .hover\\:bg-card-hover:hover { background-color: var(--color-card-hover) !important; }
+        `}} />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{

@@ -75,6 +75,7 @@ function applyTheme(resolved: 'light' | 'dark', preference: Theme) {
   Object.entries(tokens).forEach(([prop, value]) => {
     root.style.setProperty(prop, value)
   })
+  console.log('[v0] applyTheme:', resolved, 'bg now:', root.style.getPropertyValue('--color-background'))
 
   // data-theme attribute for CSS fallbacks / 3rd party integrations
   root.setAttribute('data-theme', preference === 'system' ? resolved : preference)
