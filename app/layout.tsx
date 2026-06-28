@@ -44,6 +44,49 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `(function(){try{var t=localStorage.getItem('cg-theme');var d=document.documentElement;if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches)){d.classList.add('dark');d.style.colorScheme='dark';}else{d.classList.remove('dark');d.style.colorScheme='light';}}catch(e){}})();`,
           }}
         />
+        {/*
+          Dark-mode token overrides — injected as a plain <style> tag so they
+          live outside Tailwind v4's @layer system entirely and always win the
+          cascade over @layer theme tokens.
+        */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media (prefers-color-scheme: dark) {
+            :root:not(.light) {
+              --color-background: #0f172a;
+              --color-background-subtle: #1e293b;
+              --color-card: #1e293b;
+              --color-card-hover: #273548;
+              --color-foreground: #f1f5f9;
+              --color-muted-foreground: #94a3b8;
+              --color-primary: #10b981;
+              --color-primary-hover: #059669;
+              --color-primary-foreground: #0f172a;
+              --color-primary-subtle: #064e3b;
+              --color-border: #334155;
+              --color-border-strong: #475569;
+              --color-destructive: #f87171;
+              --color-destructive-foreground: #0f172a;
+              --color-ring: #10b981;
+            }
+          }
+          :root.dark {
+            --color-background: #0f172a;
+            --color-background-subtle: #1e293b;
+            --color-card: #1e293b;
+            --color-card-hover: #273548;
+            --color-foreground: #f1f5f9;
+            --color-muted-foreground: #94a3b8;
+            --color-primary: #10b981;
+            --color-primary-hover: #059669;
+            --color-primary-foreground: #0f172a;
+            --color-primary-subtle: #064e3b;
+            --color-border: #334155;
+            --color-border-strong: #475569;
+            --color-destructive: #f87171;
+            --color-destructive-foreground: #0f172a;
+            --color-ring: #10b981;
+          }
+        `}} />
       </head>
       <body className="font-sans antialiased">
         {/* Skip to main content — WCAG 2.4.1 */}
