@@ -5,9 +5,13 @@ import Link from 'next/link'
 import { BookOpen, Menu, X } from 'lucide-react'
 
 const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing',  href: '#pricing'  },
-  { label: 'FAQ',      href: '#faq'      },
+  { label: 'Home',        href: '/'              },
+  { label: 'About',       href: '#about'         },
+  { label: 'Get Started', href: '#how-it-works'  },
+  { label: 'Features',    href: '#features'      },
+  { label: 'Pricing',     href: '#pricing'       },
+  { label: 'FAQ',         href: '#faq'           },
+  { label: 'Contact',     href: '#contact'       },
 ]
 
 export function NavBar() {
@@ -54,13 +58,13 @@ export function NavBar() {
         </Link>
 
         {/* Desktop centre links */}
-        <div className="hidden md:flex items-center gap-1" role="list">
+        <div className="hidden lg:flex items-center gap-0.5" role="list">
           {NAV_LINKS.map(({ label, href }) => (
             <a
               key={label}
               href={href}
               role="listitem"
-              className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              className="px-2.5 py-1.5 rounded-lg text-[0.8125rem] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 whitespace-nowrap"
             >
               {label}
             </a>
@@ -68,7 +72,7 @@ export function NavBar() {
         </div>
 
         {/* Desktop right actions */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-2">
           <Link
             href="/sign-in"
             className="btn-ghost text-sm text-slate-600"
@@ -80,9 +84,9 @@ export function NavBar() {
           </Link>
         </div>
 
-        {/* Mobile hamburger */}
+        {/* Mobile/tablet hamburger */}
         <button
-          className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+          className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"
@@ -92,11 +96,11 @@ export function NavBar() {
         </button>
       </nav>
 
-      {/* Mobile drawer */}
+      {/* Mobile/tablet drawer */}
       {mobileOpen && (
         <div
           id="mobile-menu"
-          className="md:hidden border-t border-slate-100 bg-white px-4 pb-6 pt-4 flex flex-col gap-1"
+          className="lg:hidden border-t border-slate-100 bg-white px-4 pb-6 pt-4 flex flex-col gap-1"
           role="menu"
           aria-label="Mobile navigation"
         >

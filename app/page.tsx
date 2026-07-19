@@ -4,9 +4,10 @@ import {
   BookOpen, Check, X, Star,
   Shield, MessageSquare, Globe, Volume2,
   LayoutDashboard, QrCode, ChevronDown, Zap,
-  ArrowRight, Users, TrendingUp, Award, Sparkles,
+  ArrowRight, Sparkles,
   Twitter, Linkedin, Github,
   AlignLeft, Play, Image as ImageIcon, Brain, Download,
+  MousePointerClick, Factory,
 } from 'lucide-react'
 import { FindYourGuideSection } from '@/components/FindYourGuideSection'
 import { NavBar } from '@/components/NavBar'
@@ -88,36 +89,80 @@ function Hero() {
   )
 }
 
-/* ─── Stats Bar ─────────────────────────────────────────────────────────── */
-const stats = [
-  { value: '10K+', label: 'Manuals Published',   icon: BookOpen   },
-  { value: '98%',  label: 'Accessibility Score',  icon: Award      },
-  { value: '5K+',  label: 'Active Users',          icon: Users      },
-  { value: '300+', label: 'Manufacturers',          icon: TrendingUp },
-]
-
-function Stats() {
+/* ─── See How It Works ──────────────────────────────────────────────────── */
+function SeeHowItWorks() {
   return (
-    <section className="bg-slate-900 py-14" aria-label="Platform statistics">
+    <section
+      id="how-it-works"
+      className="py-20 md:py-28 bg-slate-50 border-y border-slate-100"
+      aria-labelledby="how-it-works-heading"
+    >
       <div className="container">
-        <dl className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10 rounded-2xl overflow-hidden border border-white/10">
-          {stats.map(({ value, label, icon: Icon }) => (
-            <div
-              key={label}
-              className="flex flex-col items-center justify-center gap-3 py-10 px-6 text-center"
+        <div className="max-w-2xl mx-auto text-center">
+          <SectionLabel>Get Started</SectionLabel>
+          <h2
+            id="how-it-works-heading"
+            className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-5 text-balance"
+          >
+            See how ClearGuide works
+          </h2>
+          <p className="text-base text-slate-500 leading-relaxed mb-12 max-w-lg mx-auto">
+            Whether you&apos;re finding a guide for a product you own or publishing
+            manuals for your customers — ClearGuide makes it effortless.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a
+              href="#find-guide"
+              className="group inline-flex items-center gap-3 rounded-2xl border-2 px-8 py-5 font-semibold text-sm transition-all duration-200 w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              style={{
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)',
+                backgroundColor: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-primary)'
+                e.currentTarget.style.color = '#fff'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = 'var(--color-primary)'
+              }}
             >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(0,196,122,0.15)' }}
-                aria-hidden="true"
-              >
-                <Icon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
-              </div>
-              <dt className="text-[2rem] font-bold tabular-nums tracking-tight text-white leading-none">{value}</dt>
-              <dd className="text-xs text-slate-400 font-medium">{label}</dd>
-            </div>
-          ))}
-        </dl>
+              <MousePointerClick className="w-5 h-5 shrink-0" aria-hidden="true" />
+              <span>
+                <span className="block text-base font-bold tracking-tight">For Users</span>
+                <span className="block text-xs opacity-70 font-normal mt-0.5">Find your product guide</span>
+              </span>
+              <ArrowRight className="w-4 h-4 shrink-0 ml-auto transition-transform group-hover:translate-x-1" aria-hidden="true" />
+            </a>
+
+            <a
+              href="#manufacturers"
+              className="group inline-flex items-center gap-3 rounded-2xl border-2 px-8 py-5 font-semibold text-sm transition-all duration-200 w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              style={{
+                borderColor: '#0f172a',
+                color: '#0f172a',
+                backgroundColor: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#0f172a'
+                e.currentTarget.style.color = '#fff'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = '#0f172a'
+              }}
+            >
+              <Factory className="w-5 h-5 shrink-0" aria-hidden="true" />
+              <span>
+                <span className="block text-base font-bold tracking-tight">For Manufacturers</span>
+                <span className="block text-xs opacity-70 font-normal mt-0.5">Publish accessible manuals</span>
+              </span>
+              <ArrowRight className="w-4 h-4 shrink-0 ml-auto transition-transform group-hover:translate-x-1" aria-hidden="true" />
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -469,7 +514,7 @@ const manufacturerBenefits = [
 
 function ManufacturerSection() {
   return (
-    <section className="py-20 md:py-28 bg-slate-900" aria-labelledby="mfr-heading">
+    <section id="manufacturers" className="py-20 md:py-28 bg-slate-900" aria-labelledby="mfr-heading">
       <div className="container">
         <div className="grid md:grid-cols-2 gap-14 items-center">
 
@@ -1104,13 +1149,13 @@ export default function LandingPage() {
       <NavBar />
       <main id="main-content">
         <Hero />
-        <Stats />
+        <SeeHowItWorks />
         <WhyClearGuide />
-        <PlatformFeatures />
         <BeforeAfter />
+        <PlatformFeatures />
         <FindYourGuideSection />
-        <ManufacturerSection />
         <Testimonials />
+        <ManufacturerSection />
         <Pricing />
         <FAQ />
         <FinalCTA />
