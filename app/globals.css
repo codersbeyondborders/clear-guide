@@ -9,6 +9,7 @@
 
 @theme inline {
   --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Mono', ui-monospace, monospace;
 
   /* Emerald scale */
   --color-emerald-50:  #ecfdf5;
@@ -91,11 +92,16 @@
   h1, h2, h3, h4, h5, h6 {
     color: var(--color-foreground);
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.15;
     text-wrap: balance;
+    letter-spacing: -0.02em;
   }
 
   p { text-wrap: pretty; }
+
+  /* details / summary reset for FAQ accordion */
+  details summary::-webkit-details-marker { display: none; }
+  details summary { cursor: pointer; }
 }
 
 /* ==========================================================================

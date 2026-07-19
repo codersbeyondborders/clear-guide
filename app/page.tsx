@@ -1,65 +1,69 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  BookOpen, ChevronRight, Check, X, Star,
+  BookOpen, Check, X, Star,
   Shield, MessageSquare, Globe, Volume2,
   LayoutDashboard, QrCode, ChevronDown, Zap,
   ArrowRight, Users, TrendingUp, Award, Sparkles,
+  Twitter, Linkedin, Github,
 } from 'lucide-react'
 import { FindYourGuideSection } from '@/components/FindYourGuideSection'
 import { NavBar } from '@/components/NavBar'
 
+/* ─── Section label helper ─────────────────────────────────────────────── */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'var(--color-primary)' }}>
+      <span className="w-3.5 h-px" style={{ backgroundColor: 'var(--color-primary)' }} aria-hidden="true" />
+      {children}
+    </p>
+  )
+}
+
 /* ─── Hero ─────────────────────────────────────────────────────────────── */
 function Hero() {
   return (
-    <section
-      className="overflow-hidden bg-white"
-      aria-labelledby="hero-heading"
-    >
+    <section className="overflow-hidden bg-white" aria-labelledby="hero-heading">
       <div className="container">
-        <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center py-16 md:py-24">
+        <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center py-16 md:py-24 lg:py-28">
+
           {/* Left — text */}
-          <div className="order-2 md:order-1 max-w-lg">
+          <div className="order-2 md:order-1">
             {/* Pill badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-7 border border-emerald-200 bg-emerald-50 text-emerald-700">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-8 border border-emerald-200 bg-emerald-50 text-emerald-700">
               <Sparkles className="w-3 h-3" aria-hidden="true" />
               AI-Powered Manual Platform
             </div>
 
             <h1
               id="hero-heading"
-              className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-slate-900 tracking-tight leading-[1.08] mb-5 text-balance"
+              className="text-4xl sm:text-5xl lg:text-[3.75rem] font-bold text-slate-900 tracking-tight leading-[1.06] mb-6 text-balance"
             >
-              Product Manuals{' '}
-              <span className="block" style={{ color: 'var(--color-primary)' }}>
-                Built for People
-              </span>
+              Product manuals{' '}
+              <span style={{ color: 'var(--color-primary)' }}>people</span>{' '}
+              actually use
             </h1>
 
-            <p className="text-base md:text-lg text-slate-500 leading-relaxed mb-9 max-w-[440px]">
-              Replace confusing paper manuals with accessible, AI-powered digital guides.
-              High-contrast, multilingual, and instant AI chat — built for everyone.
+            <p className="text-lg text-slate-500 leading-relaxed mb-8 max-w-[460px]">
+              Replace paper manuals with accessible, AI-powered digital guides.
+              High-contrast, multilingual, instant AI chat — built for everyone.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 mb-10">
-              <Link href="/sign-up" className="btn-primary text-sm">
-                Get Started Free
+              <Link href="/sign-up" className="btn-primary">
+                Get started free
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
-              <a href="#features" className="btn-outline text-sm">
-                See Features
+              <a href="#features" className="btn-outline">
+                See how it works
               </a>
             </div>
 
             {/* Trust signals */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-              {[
-                'No credit card required',
-                'WCAG 2.2 AAA',
-                'Free plan available',
-              ].map((t) => (
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              {['No credit card required', 'WCAG 2.2 AAA', 'Free plan available'].map((t) => (
                 <span key={t} className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                  <span className="w-1 h-1 rounded-full bg-slate-300" aria-hidden="true" />
+                  <Check className="w-3 h-3 shrink-0" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
                   {t}
                 </span>
               ))}
@@ -67,7 +71,7 @@ function Hero() {
           </div>
 
           {/* Right — hero image */}
-          <div className="order-1 md:order-2 rounded-3xl overflow-hidden border border-slate-100 shadow-xl shadow-slate-100">
+          <div className="order-1 md:order-2 rounded-2xl overflow-hidden border border-slate-200 shadow-2xl shadow-slate-200/60">
             <Image
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hero-8tPcFkA81Hr8dcec9WRNOhBbBVqiW9.webp"
               alt="Split illustration: frustrated user struggling with paper manual on the left, happy user accessing digital guide on phone on the right"
@@ -83,23 +87,21 @@ function Hero() {
   )
 }
 
-/* ─── Logos / Social proof strip ────────────────────────────────────────── */
+/* ─── Trust Bar ─────────────────────────────────────────────────────────── */
+const brands = ['Bosch', 'Philips', 'Dyson', 'Samsung', 'Miele', 'Siemens']
+
 function TrustBar() {
-  const brands = [
-    'Bosch', 'Philips', 'Dyson', 'Samsung', 'Miele', 'Siemens',
-  ]
   return (
-    <section
-      className="border-y border-slate-100 bg-slate-50 py-6"
-      aria-label="Trusted by leading manufacturers"
-    >
+    <section className="border-y border-slate-100 bg-slate-50 py-7" aria-label="Trusted by leading manufacturers">
       <div className="container">
-        <p className="text-center text-xs font-semibold uppercase tracking-widest text-slate-400 mb-5">
+        <p className="text-center text-xs font-semibold uppercase tracking-widest text-slate-400 mb-6">
           Trusted by leading manufacturers
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
           {brands.map((b) => (
-            <span key={b} className="text-sm font-bold text-slate-300 tracking-tight">{b}</span>
+            <span key={b} className="text-base font-bold tracking-tight text-slate-300 select-none">
+              {b}
+            </span>
           ))}
         </div>
       </div>
@@ -109,33 +111,30 @@ function TrustBar() {
 
 /* ─── Stats Bar ─────────────────────────────────────────────────────────── */
 const stats = [
-  { value: '10K+', label: 'Manuals Published',  icon: BookOpen    },
-  { value: '98%',  label: 'Accessibility Score', icon: Award       },
-  { value: '5K+',  label: 'Active Users',        icon: Users       },
-  { value: '300+', label: 'Manufacturers',        icon: TrendingUp  },
+  { value: '10K+', label: 'Manuals Published',   icon: BookOpen   },
+  { value: '98%',  label: 'Accessibility Score',  icon: Award      },
+  { value: '5K+',  label: 'Active Users',          icon: Users      },
+  { value: '300+', label: 'Manufacturers',          icon: TrendingUp },
 ]
 
 function Stats() {
   return (
-    <section
-      className="bg-slate-900 py-12"
-      aria-label="Platform statistics"
-    >
+    <section className="bg-slate-900 py-14" aria-label="Platform statistics">
       <div className="container">
-        <dl className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 rounded-2xl overflow-hidden">
+        <dl className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10 rounded-2xl overflow-hidden border border-white/10">
           {stats.map(({ value, label, icon: Icon }) => (
             <div
               key={label}
-              className="flex flex-col items-center justify-center gap-2 py-8 px-4 text-center bg-slate-900"
+              className="flex flex-col items-center justify-center gap-3 py-10 px-6 text-center"
             >
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center mb-1"
+                className="w-9 h-9 rounded-xl flex items-center justify-center"
                 style={{ backgroundColor: 'rgba(0,196,122,0.15)' }}
                 aria-hidden="true"
               >
                 <Icon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
               </div>
-              <dt className="text-3xl font-bold tabular-nums tracking-tight text-white">{value}</dt>
+              <dt className="text-[2rem] font-bold tabular-nums tracking-tight text-white leading-none">{value}</dt>
               <dd className="text-xs text-slate-400 font-medium">{label}</dd>
             </div>
           ))}
@@ -150,66 +149,61 @@ const whyFeatures = [
   {
     icon: Shield,
     title: 'WCAG 2.2 AAA Compliant',
-    description: 'Every guide passes the highest accessibility standard. High contrast, keyboard navigation, and screen reader support built in.',
+    description:
+      'Every guide passes the highest accessibility standard. High contrast, keyboard navigation, and screen reader support built in.',
   },
   {
     icon: MessageSquare,
     title: 'Instant AI Answers',
-    description: 'Contextual AI chat answers any question from within the manual, in the user\'s own language, instantly.',
+    description:
+      'Contextual AI chat answers any question from within the manual, in the user\'s own language, instantly.',
   },
   {
     icon: Globe,
     title: '50+ Languages',
-    description: 'AI-powered translations auto-generated at publish time. One upload, every language.',
+    description:
+      'AI-powered translations auto-generated at publish time. One upload, every language.',
   },
   {
     icon: Volume2,
     title: 'Audio Descriptions',
-    description: 'Full text-to-speech narration and image descriptions for visually impaired users.',
+    description:
+      'Full text-to-speech narration and image descriptions for visually impaired users.',
   },
 ]
 
 function WhyClearGuide() {
   return (
-    <section
-      className="py-20 md:py-28 bg-white"
-      aria-labelledby="why-heading"
-    >
+    <section className="py-20 md:py-28 bg-white" aria-labelledby="why-heading">
       <div className="container">
-        <div className="grid md:grid-cols-2 gap-14 items-start">
-          {/* Left */}
-          <div className="md:sticky md:top-28">
-            <p
-              className="text-xs font-bold uppercase tracking-widest mb-4"
-              style={{ color: 'var(--color-primary)' }}
-            >
-              Why ClearGuide?
-            </p>
+        <div className="grid md:grid-cols-2 gap-16 items-start">
+
+          {/* Left sticky */}
+          <div className="md:sticky md:top-24">
+            <SectionLabel>Why ClearGuide?</SectionLabel>
             <h2
               id="why-heading"
-              className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 leading-tight mb-5 tracking-tight"
+              className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 leading-tight mb-6 tracking-tight text-balance"
             >
-              The Smarter Choice for{' '}
-              <em className="not-italic" style={{ color: 'var(--color-primary)' }}>
-                Accessible
-              </em>{' '}
-              Manuals
+              The smarter choice for{' '}
+              <em className="not-italic" style={{ color: 'var(--color-primary)' }}>accessible</em>{' '}
+              manuals
             </h2>
-            <p className="text-slate-500 leading-relaxed text-base max-w-sm">
+            <p className="text-base text-slate-500 leading-relaxed max-w-sm">
               Traditional paper manuals exclude millions of users. ClearGuide turns
               them into living, accessible digital experiences that work for everyone.
             </p>
           </div>
 
           {/* Right — 2×2 feature grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             {whyFeatures.map((f) => (
               <article
                 key={f.title}
-                className="rounded-2xl border border-slate-100 p-6 bg-slate-50 hover:border-emerald-200 hover:bg-emerald-50/30 transition-colors"
+                className="rounded-2xl border border-slate-100 p-6 bg-slate-50 hover:border-emerald-200 hover:bg-emerald-50/40 transition-colors group"
               >
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-colors group-hover:bg-emerald-100/60"
                   style={{ backgroundColor: 'var(--color-primary-subtle)' }}
                   aria-hidden="true"
                 >
@@ -260,76 +254,62 @@ const platformFeatures = [
 
 function PlatformFeatures() {
   return (
-    <section
-      id="features"
-      className="py-20 md:py-28 bg-slate-50"
-      aria-labelledby="platform-heading"
-    >
+    <section id="features" className="py-20 md:py-28 bg-slate-50" aria-labelledby="platform-heading">
       <div className="container">
         <header className="mb-14">
-          <p
-            className="text-xs font-bold uppercase tracking-widest mb-4"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            Platform Features
-          </p>
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <SectionLabel>Platform Features</SectionLabel>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <h2
               id="platform-heading"
-              className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight max-w-xl"
+              className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight max-w-xl text-balance"
             >
-              Every Tool to Elevate Your Manuals
+              Every tool to elevate your manuals
             </h2>
-            <Link href="/sign-up" className="btn-primary text-sm shrink-0 self-start md:self-auto">
-              Start Free
-              <ArrowRight className="w-4 h-4" />
+            <Link href="/sign-up" className="btn-primary shrink-0 self-start md:self-auto">
+              Start for free
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>
           </div>
         </header>
 
-        <div className="grid sm:grid-cols-2 gap-5">
+        <div className="grid sm:grid-cols-2 gap-4">
           {platformFeatures.map((f, i) => (
             <article
               key={f.title}
-              className={`rounded-2xl p-7 border flex items-start gap-5 transition-shadow hover:shadow-md ${
+              className={`rounded-2xl p-7 border flex items-start gap-5 transition-shadow hover:shadow-lg ${
                 i === 0
-                  ? 'bg-slate-900 border-slate-800 text-white'
+                  ? 'bg-slate-900 border-slate-800'
                   : 'bg-white border-slate-100'
               }`}
             >
               <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                 style={{
                   backgroundColor: i === 0 ? 'rgba(0,196,122,0.15)' : 'var(--color-primary-subtle)',
                 }}
                 aria-hidden="true"
               >
-                <f.icon
-                  className="w-5 h-5"
-                  style={{ color: 'var(--color-primary)' }}
-                />
+                <f.icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
               </div>
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <span
-                    className="text-xs font-bold px-2 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: i === 0 ? 'rgba(0,196,122,0.15)' : 'var(--color-primary-subtle)',
-                      color: i === 0 ? '#4ade80' : 'var(--color-emerald-700)',
-                    }}
-                  >
-                    {f.badge}
-                  </span>
-                </div>
+                <span
+                  className="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full mb-3"
+                  style={{
+                    backgroundColor: i === 0 ? 'rgba(0,196,122,0.15)' : 'var(--color-primary-subtle)',
+                    color: i === 0 ? '#4ade80' : 'var(--color-emerald-700)',
+                  }}
+                >
+                  {f.badge}
+                </span>
                 <h3
                   className="text-base font-bold mb-2 tracking-tight"
-                  style={{ color: i === 0 ? '#ffffff' : '#0f172a' }}
+                  style={{ color: i === 0 ? '#fff' : '#0f172a' }}
                 >
                   {f.title}
                 </h3>
                 <p
                   className="text-sm leading-relaxed"
-                  style={{ color: i === 0 ? 'rgba(255,255,255,0.6)' : '#64748b' }}
+                  style={{ color: i === 0 ? 'rgba(255,255,255,0.55)' : '#64748b' }}
                 >
                   {f.description}
                 </p>
@@ -353,7 +333,7 @@ const withoutList = [
 ]
 
 const withList = [
-  'Adjustable font sizes and high contrast mode built in',
+  'Adjustable font sizes and high-contrast mode built in',
   'Always accessible via QR code or product search',
   'Instant AI chat answers any question in plain language',
   'Audio descriptions and text-to-speech for every section',
@@ -363,31 +343,23 @@ const withList = [
 
 function BeforeAfter() {
   return (
-    <section
-      className="py-20 md:py-28 bg-white"
-      aria-labelledby="ba-heading"
-    >
+    <section className="py-20 md:py-28 bg-white" aria-labelledby="ba-heading">
       <div className="container">
         <header className="mb-14 text-center">
-          <p
-            className="text-xs font-bold uppercase tracking-widest mb-4"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            The Difference
-          </p>
+          <SectionLabel>The Difference</SectionLabel>
           <h2
             id="ba-heading"
-            className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-4"
+            className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-4 text-balance"
           >
-            Before &amp; After ClearGuide
+            Before &amp; after ClearGuide
           </h2>
-          <p className="text-slate-500 text-base max-w-md mx-auto">
+          <p className="text-base text-slate-500 max-w-sm mx-auto leading-relaxed">
             See how the experience transforms when manuals are built for people, not paper.
           </p>
         </header>
 
         {/* Photos */}
-        <div className="grid sm:grid-cols-2 gap-4 mb-12">
+        <div className="grid sm:grid-cols-2 gap-4 mb-10">
           <figure className="relative rounded-2xl overflow-hidden shadow-md">
             <Image
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/before-ftzlTJ2qEGFIpK2fQR4hTJ87Yd62ZC.webp"
@@ -395,15 +367,15 @@ function BeforeAfter() {
               width={600}
               height={400}
               className="w-full object-cover"
-              style={{ height: '16rem' }}
+              style={{ height: '18rem' }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" aria-hidden="true" />
-            <div className="absolute bottom-4 left-4">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-white text-red-600 shadow-sm">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" aria-hidden="true" />
+            <figcaption className="absolute bottom-4 left-4">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-white text-red-600 shadow">
                 <X className="w-3 h-3" aria-hidden="true" />
                 Without ClearGuide
               </span>
-            </div>
+            </figcaption>
           </figure>
 
           <figure className="relative rounded-2xl overflow-hidden shadow-md">
@@ -413,27 +385,26 @@ function BeforeAfter() {
               width={600}
               height={400}
               className="w-full object-cover"
-              style={{ height: '16rem' }}
+              style={{ height: '18rem' }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" aria-hidden="true" />
-            <div className="absolute bottom-4 left-4">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" aria-hidden="true" />
+            <figcaption className="absolute bottom-4 left-4">
               <span
-                className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm"
-                style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
+                className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full shadow"
+                style={{ backgroundColor: 'var(--color-primary)', color: '#fff' }}
               >
                 <Check className="w-3 h-3" aria-hidden="true" />
                 With ClearGuide
               </span>
-            </div>
+            </figcaption>
           </figure>
         </div>
 
         {/* Comparison lists */}
-        <div className="grid sm:grid-cols-2 gap-6">
-          {/* Without */}
-          <div className="rounded-2xl border border-red-100 bg-red-50/50 p-6">
+        <div className="grid sm:grid-cols-2 gap-5">
+          <div className="rounded-2xl border border-red-100 bg-red-50/60 p-7">
             <h3 className="text-sm font-bold text-slate-900 mb-5 flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+              <span className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center shrink-0">
                 <X className="w-3 h-3 text-red-500" aria-hidden="true" />
               </span>
               Without ClearGuide
@@ -448,11 +419,10 @@ function BeforeAfter() {
             </ul>
           </div>
 
-          {/* With */}
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-6">
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-7">
             <h3 className="text-sm font-bold text-slate-900 mb-5 flex items-center gap-2">
               <span
-                className="w-5 h-5 rounded-full flex items-center justify-center"
+                className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
                 style={{ backgroundColor: 'var(--color-primary-subtle)' }}
               >
                 <Check className="w-3 h-3" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
@@ -462,11 +432,7 @@ function BeforeAfter() {
             <ul className="flex flex-col gap-3" aria-label="Benefits with ClearGuide">
               {withList.map((item) => (
                 <li key={item} className="flex items-start gap-3 text-sm text-slate-600">
-                  <Check
-                    className="w-4 h-4 shrink-0 mt-0.5"
-                    style={{ color: 'var(--color-primary)' }}
-                    aria-hidden="true"
-                  />
+                  <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
                   <span>{item}</span>
                 </li>
               ))}
@@ -478,7 +444,7 @@ function BeforeAfter() {
   )
 }
 
-/* ─── Manufacturer Integration ──────────────────────────────────────────── */
+/* ─── Manufacturer Section ──────────────────────────────────────────────── */
 const manufacturerBenefits = [
   { text: 'PDF & Word import — convert existing manuals instantly' },
   { text: 'Auto-generated QR codes for every product' },
@@ -488,22 +454,20 @@ const manufacturerBenefits = [
 
 function ManufacturerSection() {
   return (
-    <section
-      className="py-20 md:py-28 bg-slate-900"
-      aria-labelledby="mfr-heading"
-    >
+    <section className="py-20 md:py-28 bg-slate-900" aria-labelledby="mfr-heading">
       <div className="container">
         <div className="grid md:grid-cols-2 gap-14 items-center">
+
           {/* Left */}
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest mb-5 text-emerald-400">
-              For Manufacturers
-            </p>
+            <SectionLabel>
+              <span style={{ color: 'var(--color-primary)' }}>For Manufacturers</span>
+            </SectionLabel>
             <h2
               id="mfr-heading"
-              className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-5 tracking-tight"
+              className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-5 tracking-tight text-balance"
             >
-              Seamless Integration with Your Workflow
+              Seamless integration with your workflow
             </h2>
             <p className="text-slate-400 leading-relaxed text-base mb-8 max-w-md">
               Upload your existing PDF manuals or create new ones from scratch.
@@ -527,19 +491,21 @@ function ManufacturerSection() {
             </ul>
 
             <div className="flex flex-wrap gap-3">
-              <Link href="/sign-up" className="btn-primary text-sm">
-                Start for Free
-                <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              <Link href="/sign-up" className="btn-primary">
+                Start for free
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
-              <Link href="/manufacturer/login" className="btn-outline text-sm border-slate-600 text-slate-300 hover:border-slate-400">
-                View Demo
+              <Link
+                href="/manufacturer/login"
+                className="btn-outline border-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-800"
+              >
+                View demo
               </Link>
             </div>
           </div>
 
           {/* Right — dashboard mockup */}
           <div className="rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl">
-            {/* Mockup header */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <p className="text-sm font-bold text-white">Analytics Overview</p>
@@ -554,7 +520,7 @@ function ManufacturerSection() {
               </span>
             </div>
 
-            {/* Bar chart */}
+            {/* Bar chart mockup */}
             <div
               className="flex items-end gap-2 mb-6"
               style={{ height: '8rem' }}
@@ -564,7 +530,7 @@ function ManufacturerSection() {
               {[30, 48, 38, 62, 52, 88, 72].map((h, i) => (
                 <div
                   key={i}
-                  className="flex-1 rounded-t-lg transition-opacity"
+                  className="flex-1 rounded-t-md"
                   style={{
                     height: `${h}%`,
                     backgroundColor: i === 5 ? 'var(--color-primary)' : 'rgba(0,196,122,0.25)',
@@ -579,10 +545,7 @@ function ManufacturerSection() {
                 <p className="text-lg font-bold text-white">2.4k</p>
                 <p className="text-xs text-slate-400 mt-0.5">Views</p>
               </div>
-              <div
-                className="rounded-xl p-3 text-center"
-                style={{ backgroundColor: 'rgba(0,196,122,0.2)' }}
-              >
+              <div className="rounded-xl p-3 text-center" style={{ backgroundColor: 'rgba(0,196,122,0.2)' }}>
                 <p className="text-lg font-bold" style={{ color: 'var(--color-primary)' }}>24/7</p>
                 <p className="text-xs text-emerald-400 mt-0.5">AI Support</p>
               </div>
@@ -592,6 +555,7 @@ function ManufacturerSection() {
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </section>
@@ -606,6 +570,7 @@ const testimonials = [
     role: 'Head of Manufacturing',
     rating: 5,
     company: 'HomeApply Ltd',
+    initials: 'SM',
   },
   {
     quote: 'The only manual platform that takes WCAG seriously. The high-contrast mode is flawless.',
@@ -613,6 +578,7 @@ const testimonials = [
     role: 'Accessibility Lead',
     rating: 5,
     company: 'CiAB',
+    initials: 'JT',
   },
   {
     quote: 'I have low vision and this is the first manual I could actually read without help. Amazing.',
@@ -620,45 +586,48 @@ const testimonials = [
     role: 'End User',
     rating: 5,
     company: '',
+    initials: 'PK',
   },
 ]
 
 function Testimonials() {
   return (
-    <section
-      className="py-20 md:py-28 bg-slate-50"
-      aria-labelledby="testimonials-heading"
-    >
+    <section className="py-20 md:py-28 bg-slate-50" aria-labelledby="testimonials-heading">
       <div className="container">
         <header className="mb-14">
-          <p
-            className="text-xs font-bold uppercase tracking-widest mb-4"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            Testimonials
-          </p>
-          <h2
-            id="testimonials-heading"
-            className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight"
-          >
-            Real Results from Real Users
-          </h2>
+          <SectionLabel>Testimonials</SectionLabel>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <h2
+              id="testimonials-heading"
+              className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight text-balance"
+            >
+              Real results from real users
+            </h2>
+            <div className="flex items-center gap-2 shrink-0">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className="w-4 h-4"
+                  style={{ color: 'var(--color-primary)', fill: 'var(--color-primary)' }}
+                  aria-hidden="true"
+                />
+              ))}
+              <span className="text-sm font-semibold text-slate-700 ml-1">5.0</span>
+            </div>
+          </div>
         </header>
 
         <div className="grid md:grid-cols-3 gap-5">
           {testimonials.map((t, i) => (
             <article
               key={t.name}
-              className={`rounded-2xl p-7 flex flex-col gap-5 border transition-shadow hover:shadow-md ${
+              className={`rounded-2xl p-7 flex flex-col gap-5 border transition-shadow hover:shadow-lg ${
                 i === 1
                   ? 'bg-slate-900 border-slate-800'
                   : 'bg-white border-slate-100'
               }`}
             >
-              <div
-                className="flex items-center gap-0.5"
-                aria-label={`${t.rating} out of 5 stars`}
-              >
+              <div className="flex items-center gap-0.5" aria-label={`${t.rating} out of 5 stars`}>
                 {Array.from({ length: t.rating }).map((_, idx) => (
                   <Star
                     key={idx}
@@ -678,29 +647,23 @@ function Testimonials() {
 
               <footer
                 className="flex items-center gap-3 pt-4"
-                style={{ borderTop: `1px solid ${i === 1 ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}` }}
+                style={{ borderTop: `1px solid ${i === 1 ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}` }}
               >
                 <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 tracking-wide"
                   style={{
                     backgroundColor: i === 1 ? 'rgba(0,196,122,0.2)' : 'var(--color-primary-subtle)',
                     color: 'var(--color-primary)',
                   }}
                   aria-hidden="true"
                 >
-                  {t.name[0]}
+                  {t.initials}
                 </div>
                 <div>
-                  <p
-                    className="text-sm font-bold"
-                    style={{ color: i === 1 ? '#ffffff' : '#0f172a' }}
-                  >
+                  <p className="text-sm font-bold" style={{ color: i === 1 ? '#fff' : '#0f172a' }}>
                     {t.name}
                   </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: i === 1 ? 'rgba(255,255,255,0.45)' : '#64748b' }}
-                  >
+                  <p className="text-xs" style={{ color: i === 1 ? 'rgba(255,255,255,0.4)' : '#64748b' }}>
                     {t.role}{t.company ? `, ${t.company}` : ''}
                   </p>
                 </div>
@@ -721,7 +684,7 @@ const plans = [
     period: '',
     description: 'Perfect for trying out ClearGuide',
     features: ['Up to 3 manuals', 'Core accessibility features', 'QR code generation', 'Community support'],
-    cta: 'Get Started',
+    cta: 'Get started',
     href: '/sign-up',
     highlight: false,
   },
@@ -730,8 +693,14 @@ const plans = [
     price: '£29',
     period: '/mo',
     description: 'For growing manufacturers',
-    features: ['Unlimited manuals', 'Full accessibility suite', 'AI chat support', 'Analytics dashboard', 'Priority support'],
-    cta: 'Start Free Trial',
+    features: [
+      'Unlimited manuals',
+      'Full accessibility suite',
+      'AI chat support',
+      'Analytics dashboard',
+      'Priority support',
+    ],
+    cta: 'Start free trial',
     href: '/sign-up',
     highlight: true,
   },
@@ -740,8 +709,13 @@ const plans = [
     price: '£89',
     period: '/mo',
     description: 'For large-scale operations',
-    features: ['Everything in Pro', 'Custom branding & domain', 'SSO & team management', 'Dedicated account manager'],
-    cta: 'Contact Sales',
+    features: [
+      'Everything in Pro',
+      'Custom branding & domain',
+      'SSO & team management',
+      'Dedicated account manager',
+    ],
+    cta: 'Contact sales',
     href: 'mailto:sales@clearguide.io',
     highlight: false,
   },
@@ -749,27 +723,18 @@ const plans = [
 
 function Pricing() {
   return (
-    <section
-      id="pricing"
-      className="py-20 md:py-28 bg-white"
-      aria-labelledby="pricing-heading"
-    >
+    <section id="pricing" className="py-20 md:py-28 bg-white" aria-labelledby="pricing-heading">
       <div className="container">
         <header className="mb-14">
-          <p
-            className="text-xs font-bold uppercase tracking-widest mb-4"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            Pricing
-          </p>
+          <SectionLabel>Pricing</SectionLabel>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <h2
               id="pricing-heading"
-              className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight"
+              className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight text-balance"
             >
-              Plans That Fit Your Journey
+              Plans that fit your journey
             </h2>
-            <p className="text-sm text-slate-400 md:text-right max-w-xs">
+            <p className="text-sm text-slate-400 md:text-right max-w-xs shrink-0">
               All plans include a 14-day free trial. No credit card required.
             </p>
           </div>
@@ -781,15 +746,13 @@ function Pricing() {
               key={plan.name}
               aria-label={`${plan.name} plan`}
               className={`rounded-2xl p-8 flex flex-col gap-6 border relative ${
-                plan.highlight
-                  ? 'bg-slate-900 border-slate-700'
-                  : 'bg-white border-slate-100'
+                plan.highlight ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'
               }`}
             >
               {plan.highlight && (
                 <div
-                  className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full"
-                  style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
+                  className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"
+                  style={{ backgroundColor: 'var(--color-primary)', color: '#fff' }}
                 >
                   Most Popular
                 </div>
@@ -798,21 +761,21 @@ function Pricing() {
               <div>
                 <p
                   className="text-xs font-bold uppercase tracking-widest mb-3"
-                  style={{ color: plan.highlight ? 'rgba(255,255,255,0.45)' : '#94a3b8' }}
+                  style={{ color: plan.highlight ? 'rgba(255,255,255,0.4)' : '#94a3b8' }}
                 >
                   {plan.name}
                 </p>
                 <div className="flex items-baseline gap-1 mb-2">
                   <span
                     className="text-4xl font-bold tabular-nums tracking-tight"
-                    style={{ color: plan.highlight ? '#ffffff' : '#0f172a' }}
+                    style={{ color: plan.highlight ? '#fff' : '#0f172a' }}
                   >
                     {plan.price}
                   </span>
                   {plan.period && (
                     <span
                       className="text-sm"
-                      style={{ color: plan.highlight ? 'rgba(255,255,255,0.4)' : '#94a3b8' }}
+                      style={{ color: plan.highlight ? 'rgba(255,255,255,0.35)' : '#94a3b8' }}
                     >
                       {plan.period}
                     </span>
@@ -826,9 +789,7 @@ function Pricing() {
                 </p>
               </div>
 
-              <div
-                style={{ borderTop: `1px solid ${plan.highlight ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}` }}
-              />
+              <hr style={{ borderColor: plan.highlight ? 'rgba(255,255,255,0.08)' : '#e2e8f0' }} />
 
               <ul className="flex flex-col gap-3 flex-1" aria-label={`${plan.name} plan features`}>
                 {plan.features.map((f) => (
@@ -852,7 +813,6 @@ function Pricing() {
               <Link
                 href={plan.href}
                 className={plan.highlight ? 'btn-primary text-center' : 'btn-outline text-center'}
-                style={plan.highlight ? { backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)' } : {}}
               >
                 {plan.cta}
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -891,52 +851,42 @@ const faqs = [
 
 function FAQ() {
   return (
-    <section
-      id="faq"
-      className="py-20 md:py-28 bg-slate-50"
-      aria-labelledby="faq-heading"
-    >
+    <section id="faq" className="py-20 md:py-28 bg-slate-50" aria-labelledby="faq-heading">
       <div className="container">
-        <div className="grid md:grid-cols-[280px_1fr] gap-14 items-start">
-          {/* Left */}
+        <div className="grid md:grid-cols-[260px_1fr] gap-14 items-start">
+
+          {/* Left sticky */}
           <div className="md:sticky md:top-24">
-            <p
-              className="text-xs font-bold uppercase tracking-widest mb-4"
-              style={{ color: 'var(--color-primary)' }}
-            >
-              FAQ
-            </p>
+            <SectionLabel>FAQ</SectionLabel>
             <h2
               id="faq-heading"
-              className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mb-6 tracking-tight"
+              className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mb-5 tracking-tight text-balance"
             >
-              Frequently Asked Questions
+              Frequently asked questions
             </h2>
             <p className="text-sm text-slate-500 leading-relaxed mb-7">
-              Can&apos;t find what you&apos;re looking for? Reach out and we&apos;ll get back to you.
+              Can&apos;t find what you&apos;re looking for? We&apos;ll get back to you within one business day.
             </p>
             <Link href="/sign-up" className="btn-primary text-sm">
-              Contact Us
+              Contact us
             </Link>
           </div>
 
           {/* Accordion */}
           <div className="rounded-2xl overflow-hidden border border-slate-100 bg-white divide-y divide-slate-100">
             {faqs.map((faq) => (
-              <div key={faq.q}>
-                <details className="group">
-                  <summary className="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer list-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400">
-                    <span className="text-sm font-semibold text-slate-900">{faq.q}</span>
-                    <ChevronDown
-                      className="w-4 h-4 text-slate-400 shrink-0 transition-transform group-open:rotate-180"
-                      aria-hidden="true"
-                    />
-                  </summary>
-                  <p className="px-6 pb-5 text-sm text-slate-500 leading-relaxed">
-                    {faq.a}
-                  </p>
-                </details>
-              </div>
+              <details key={faq.q} className="group">
+                <summary className="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer list-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400">
+                  <span className="text-sm font-semibold text-slate-900">{faq.q}</span>
+                  <ChevronDown
+                    className="w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 group-open:rotate-180"
+                    aria-hidden="true"
+                  />
+                </summary>
+                <p className="px-6 pb-6 text-sm text-slate-500 leading-relaxed">
+                  {faq.a}
+                </p>
+              </details>
             ))}
           </div>
         </div>
@@ -948,14 +898,11 @@ function FAQ() {
 /* ─── Final CTA ─────────────────────────────────────────────────────────── */
 function FinalCTA() {
   return (
-    <section
-      className="py-20 md:py-28 bg-slate-900"
-      aria-labelledby="final-cta-heading"
-    >
+    <section className="py-20 md:py-28 bg-slate-900" aria-labelledby="final-cta-heading">
       <div className="container">
         <div className="max-w-2xl mx-auto text-center">
           <div
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-8 border"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-8 border"
             style={{ backgroundColor: 'rgba(0,196,122,0.12)', borderColor: 'rgba(0,196,122,0.3)', color: '#4ade80' }}
           >
             <Zap className="w-3 h-3" aria-hidden="true" />
@@ -964,14 +911,11 @@ function FinalCTA() {
 
           <h2
             id="final-cta-heading"
-            className="text-3xl md:text-5xl font-bold text-white mb-5 leading-tight tracking-tight"
+            className="text-3xl md:text-5xl font-bold text-white mb-5 leading-tight tracking-tight text-balance"
           >
             Manuals that are actually{' '}
-            <em
-              className="not-italic font-bold"
-              style={{ color: 'var(--color-primary)' }}
-            >
-              User&#8209;friendly
+            <em className="not-italic font-bold" style={{ color: 'var(--color-primary)' }}>
+              user-friendly
             </em>
           </h2>
 
@@ -981,15 +925,12 @@ function FinalCTA() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link href="/sign-up" className="btn-primary text-sm">
-              Get Started Free
+            <Link href="/sign-up" className="btn-primary">
+              Get started free
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>
-            <Link
-              href="#"
-              className="btn-outline text-sm border-slate-600 text-slate-300 hover:border-slate-400"
-            >
-              Book a Demo
+            <Link href="#" className="btn-outline border-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-800">
+              Book a demo
             </Link>
           </div>
         </div>
@@ -1003,37 +944,51 @@ const footerCols = [
   {
     heading: 'Product',
     links: [
-      { label: 'Features', href: '#features' },
-      { label: 'Pricing',  href: '#pricing'  },
-      { label: 'Changelog', href: '#'        },
+      { label: 'Features',  href: '#features' },
+      { label: 'Pricing',   href: '#pricing'  },
+      { label: 'Changelog', href: '#'         },
+      { label: 'Roadmap',   href: '#'         },
     ],
   },
   {
     heading: 'Company',
     links: [
-      { label: 'About',   href: '#' },
-      { label: 'Blog',    href: '#' },
-      { label: 'Careers', href: '#' },
+      { label: 'About',    href: '#' },
+      { label: 'Blog',     href: '#' },
+      { label: 'Careers',  href: '#' },
+      { label: 'Press',    href: '#' },
     ],
   },
   {
     heading: 'Support',
     links: [
-      { label: 'Docs',    href: '#'    },
-      { label: 'FAQ',     href: '#faq' },
-      { label: 'Contact', href: '#'    },
+      { label: 'Docs',          href: '#'    },
+      { label: 'FAQ',           href: '#faq' },
+      { label: 'Contact',       href: '#'    },
+      { label: 'Accessibility', href: '#'    },
     ],
   },
 ]
 
+const socialLinks = [
+  { icon: Twitter,  label: 'Twitter',  href: '#' },
+  { icon: Linkedin, label: 'LinkedIn', href: '#' },
+  { icon: Github,   label: 'GitHub',   href: '#' },
+]
+
 function Footer() {
   return (
-    <footer role="contentinfo" className="bg-slate-950 py-14">
+    <footer role="contentinfo" className="bg-slate-950 py-16">
       <div className="container">
-        <div className="grid grid-cols-2 md:grid-cols-[1fr_repeat(3,auto)] gap-10 mb-12">
-          {/* Brand */}
+        <div className="grid grid-cols-2 md:grid-cols-[1.5fr_repeat(3,1fr)] gap-10 mb-14">
+
+          {/* Brand block */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5 mb-4 w-fit group">
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 mb-5 w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
+              aria-label="ClearGuide home"
+            >
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                 style={{ backgroundColor: 'var(--color-primary)' }}
@@ -1045,23 +1000,34 @@ function Footer() {
                 Clear<span style={{ color: 'var(--color-primary)' }}>Guide</span>
               </span>
             </Link>
-            <p className="text-xs max-w-[200px] leading-relaxed text-slate-500">
-              Making product manuals accessible to everyone, everywhere.
+            <p className="text-sm max-w-[220px] leading-relaxed text-slate-500 mb-6">
+              Making product manuals accessible to everyone, everywhere — one guide at a time.
             </p>
+            {/* Social icons */}
+            <div className="flex items-center gap-3">
+              {socialLinks.map(({ icon: Icon, label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                  <Icon className="w-4 h-4" aria-hidden="true" />
+                </a>
+              ))}
+            </div>
           </div>
 
+          {/* Link columns */}
           {footerCols.map((col) => (
             <div key={col.heading}>
-              <h3 className="text-xs font-bold uppercase tracking-widest mb-4 text-slate-400">
+              <h3 className="text-xs font-bold uppercase tracking-widest mb-5 text-slate-400">
                 {col.heading}
               </h3>
-              <ul className="flex flex-col gap-2.5">
+              <ul className="flex flex-col gap-3">
                 {col.links.map(({ label, href }) => (
                   <li key={label}>
-                    <a
-                      href={href}
-                      className="footer-link text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-sm"
-                    >
+                    <a href={href} className="footer-link text-sm">
                       {label}
                     </a>
                   </li>
@@ -1077,11 +1043,7 @@ function Footer() {
           </p>
           <div className="flex items-center gap-5">
             {['Privacy', 'Terms', 'Accessibility'].map((label) => (
-              <a
-                key={label}
-                href="#"
-                className="footer-link text-xs"
-              >
+              <a key={label} href="#" className="footer-link text-xs">
                 {label}
               </a>
             ))}
@@ -1100,12 +1062,12 @@ export default function LandingPage() {
       <main id="main-content">
         <Hero />
         <TrustBar />
-        <FindYourGuideSection />
         <Stats />
         <WhyClearGuide />
         <PlatformFeatures />
         <BeforeAfter />
         <ManufacturerSection />
+        <FindYourGuideSection />
         <Testimonials />
         <Pricing />
         <FAQ />

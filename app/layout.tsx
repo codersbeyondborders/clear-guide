@@ -6,7 +6,8 @@ import { ThemeProvider } from '@/context/ThemeContext'
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-sans',
+  weight: ['400', '500', '600', '700', '800'],
 })
 
 export const metadata: Metadata = {
@@ -32,7 +33,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} scroll-smooth bg-white`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} font-sans scroll-smooth bg-background`} suppressHydrationWarning>
       <body className="font-sans antialiased bg-white text-slate-900">
         {/* Skip to main content — WCAG 2.4.1 */}
         <a
