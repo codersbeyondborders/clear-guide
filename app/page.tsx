@@ -368,7 +368,7 @@ function BeforeAfter() {
       aria-labelledby="ba-heading"
     >
       <div className="container">
-        <header className="mb-14">
+        <header className="mb-14 text-center">
           <p
             className="text-xs font-bold uppercase tracking-widest mb-4"
             style={{ color: 'var(--color-primary)' }}
@@ -381,13 +381,13 @@ function BeforeAfter() {
           >
             Before &amp; After ClearGuide
           </h2>
-          <p className="text-slate-500 text-base max-w-md">
+          <p className="text-slate-500 text-base max-w-md mx-auto">
             See how the experience transforms when manuals are built for people, not paper.
           </p>
         </header>
 
         {/* Photos */}
-        <div className="grid sm:grid-cols-2 gap-4 mb-12 max-w-3xl">
+        <div className="grid sm:grid-cols-2 gap-4 mb-12">
           <figure className="relative rounded-2xl overflow-hidden shadow-md">
             <Image
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/before-ftzlTJ2qEGFIpK2fQR4hTJ87Yd62ZC.webp"
@@ -429,7 +429,7 @@ function BeforeAfter() {
         </div>
 
         {/* Comparison lists */}
-        <div className="grid sm:grid-cols-2 gap-6 max-w-3xl">
+        <div className="grid sm:grid-cols-2 gap-6">
           {/* Without */}
           <div className="rounded-2xl border border-red-100 bg-red-50/50 p-6">
             <h3 className="text-sm font-bold text-slate-900 mb-5 flex items-center gap-2">

@@ -26,9 +26,9 @@ export function FindYourGuideSection() {
       <div className="container">
 
         {/* ── Header ────────────────────────────────────────────────── */}
-        <div className="max-w-xl mb-12">
+        <div className="max-w-2xl mx-auto text-center mb-12">
           <div
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 border"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 border"
             style={{ backgroundColor: 'rgba(9,188,124,0.12)', borderColor: 'rgba(9,188,124,0.3)', color: '#09bc7c' }}
           >
             <QrCode className="w-3 h-3" aria-hidden="true" />
@@ -49,7 +49,7 @@ export function FindYourGuideSection() {
 
         {/* ── Card ────────────────────────────────────────────────────── */}
         <div
-          className="max-w-4xl rounded-3xl overflow-hidden border"
+          className="w-full rounded-3xl overflow-hidden border"
           style={{ borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#1e293b' }}
         >
           {/* Mobile-only tab bar (hidden on md+) */}
@@ -176,7 +176,7 @@ export function FindYourGuideSection() {
         </div>
 
         {/* ── Device pills ────────────────────────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-3 mt-8">
+        <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
           {['No app required', 'Works on iOS & Android', 'Accessible & screen-reader friendly'].map((label) => (
             <span
               key={label}
