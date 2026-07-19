@@ -112,22 +112,10 @@ function SeeHowItWorks() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            {/* For Users — emerald outline → filled on hover */}
             <a
               href="#find-guide"
-              className="group inline-flex items-center gap-3 rounded-2xl border-2 px-8 py-5 font-semibold text-sm transition-all duration-200 w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-              style={{
-                borderColor: 'var(--color-primary)',
-                color: 'var(--color-primary)',
-                backgroundColor: 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-primary)'
-                e.currentTarget.style.color = '#fff'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-                e.currentTarget.style.color = 'var(--color-primary)'
-              }}
+              className="group inline-flex items-center gap-3 rounded-2xl border-2 border-emerald-500 text-emerald-600 bg-transparent hover:bg-emerald-500 hover:text-white px-8 py-5 font-semibold text-sm transition-all duration-200 w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
               <MousePointerClick className="w-5 h-5 shrink-0" aria-hidden="true" />
               <span>
@@ -137,22 +125,10 @@ function SeeHowItWorks() {
               <ArrowRight className="w-4 h-4 shrink-0 ml-auto transition-transform group-hover:translate-x-1" aria-hidden="true" />
             </a>
 
+            {/* For Manufacturers — slate outline → filled on hover */}
             <a
               href="#manufacturers"
-              className="group inline-flex items-center gap-3 rounded-2xl border-2 px-8 py-5 font-semibold text-sm transition-all duration-200 w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-              style={{
-                borderColor: '#0f172a',
-                color: '#0f172a',
-                backgroundColor: 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#0f172a'
-                e.currentTarget.style.color = '#fff'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-                e.currentTarget.style.color = '#0f172a'
-              }}
+              className="group inline-flex items-center gap-3 rounded-2xl border-2 border-slate-900 text-slate-900 bg-transparent hover:bg-slate-900 hover:text-white px-8 py-5 font-semibold text-sm transition-all duration-200 w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700"
             >
               <Factory className="w-5 h-5 shrink-0" aria-hidden="true" />
               <span>
@@ -1142,7 +1118,7 @@ function Footer() {
   )
 }
 
-/* ─── Page ──────────────────────────────────────────────────────────────── */
+/* ─── Page ───���──────────────────────────────────────────────────────────── */
 export default function LandingPage() {
   return (
     <>
