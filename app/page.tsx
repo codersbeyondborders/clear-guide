@@ -6,6 +6,7 @@ import {
   LayoutDashboard, QrCode, ChevronDown, Zap,
   ArrowRight, Users, TrendingUp, Award, Sparkles,
   Twitter, Linkedin, Github,
+  AlignLeft, Play, Image as ImageIcon, Brain, Download,
 } from 'lucide-react'
 import { FindYourGuideSection } from '@/components/FindYourGuideSection'
 import { NavBar } from '@/components/NavBar'
@@ -87,28 +88,6 @@ function Hero() {
   )
 }
 
-/* ─── Trust Bar ─────────────────────────────────────────────────────────── */
-const brands = ['Bosch', 'Philips', 'Dyson', 'Samsung', 'Miele', 'Siemens']
-
-function TrustBar() {
-  return (
-    <section className="border-y border-slate-100 bg-slate-50 py-7" aria-label="Trusted by leading manufacturers">
-      <div className="container">
-        <p className="text-center text-xs font-semibold uppercase tracking-widest text-slate-400 mb-6">
-          Trusted by leading manufacturers
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
-          {brands.map((b) => (
-            <span key={b} className="text-base font-bold tracking-tight text-slate-300 select-none">
-              {b}
-            </span>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
 /* ─── Stats Bar ─────────────────────────────────────────────────────────── */
 const stats = [
   { value: '10K+', label: 'Manuals Published',   icon: BookOpen   },
@@ -153,10 +132,10 @@ const whyFeatures = [
       'Every guide passes the highest accessibility standard. High contrast, keyboard navigation, and screen reader support built in.',
   },
   {
-    icon: MessageSquare,
-    title: 'Instant AI Answers',
+    icon: Globe,
+    title: 'Planet Friendly',
     description:
-      'Contextual AI chat answers any question from within the manual, in the user\'s own language, instantly.',
+      'Replace physical paper manuals with digital guides and reduce your product\'s paper waste and carbon footprint at scale.',
   },
   {
     icon: Globe,
@@ -250,6 +229,41 @@ const platformFeatures = [
     description:
       'Auto-generated QR codes link directly to the correct manual. Print on packaging and users are guided instantly.',
   },
+  {
+    icon: AlignLeft,
+    badge: 'Content',
+    title: 'Simple Text Format',
+    description:
+      'Clean, readable text layout with clear headings and bullet points — easy to follow on any screen size.',
+  },
+  {
+    icon: Play,
+    badge: 'Content',
+    title: 'Video Format',
+    description:
+      'Embed step-by-step video walkthroughs directly in your guide so users can see and follow along in real time.',
+  },
+  {
+    icon: ImageIcon,
+    badge: 'Content',
+    title: 'Infographic Format',
+    description:
+      'Visual diagrams and annotated infographics that break down complex assembly or troubleshooting steps at a glance.',
+  },
+  {
+    icon: Brain,
+    badge: 'UX',
+    title: 'Low Cognitive Load',
+    description:
+      'Content is chunked into short, digestible steps. No walls of text — just clear, calm guidance at every stage.',
+  },
+  {
+    icon: Download,
+    badge: 'Export',
+    title: 'Multiple Download Options',
+    description:
+      'Users can download guides in PDF, DOCX, or plain text — keeping a copy offline in the format that suits them best.',
+  },
 ]
 
 function PlatformFeatures() {
@@ -272,50 +286,51 @@ function PlatformFeatures() {
           </div>
         </header>
 
-        <div className="grid sm:grid-cols-2 gap-4">
-          {platformFeatures.map((f, i) => (
-            <article
-              key={f.title}
-              className={`rounded-2xl p-7 border flex items-start gap-5 transition-shadow hover:shadow-lg ${
-                i === 0
-                  ? 'bg-slate-900 border-slate-800'
-                  : 'bg-white border-slate-100'
-              }`}
-            >
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                style={{
-                  backgroundColor: i === 0 ? 'rgba(0,196,122,0.15)' : 'var(--color-primary-subtle)',
-                }}
-                aria-hidden="true"
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {platformFeatures.map((f, i) => {
+            const dark = i === 0
+            return (
+              <article
+                key={f.title}
+                className={`rounded-2xl p-7 border flex items-start gap-5 transition-shadow hover:shadow-lg ${
+                  dark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                }`}
               >
-                <f.icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
-              </div>
-              <div className="min-w-0">
-                <span
-                  className="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full mb-3"
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                   style={{
-                    backgroundColor: i === 0 ? 'rgba(0,196,122,0.15)' : 'var(--color-primary-subtle)',
-                    color: i === 0 ? '#4ade80' : 'var(--color-emerald-700)',
+                    backgroundColor: dark ? 'rgba(0,196,122,0.15)' : 'var(--color-primary-subtle)',
                   }}
+                  aria-hidden="true"
                 >
-                  {f.badge}
-                </span>
-                <h3
-                  className="text-base font-bold mb-2 tracking-tight"
-                  style={{ color: i === 0 ? '#fff' : '#0f172a' }}
-                >
-                  {f.title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: i === 0 ? 'rgba(255,255,255,0.55)' : '#64748b' }}
-                >
-                  {f.description}
-                </p>
-              </div>
-            </article>
-          ))}
+                  <f.icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                </div>
+                <div className="min-w-0">
+                  <span
+                    className="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full mb-3"
+                    style={{
+                      backgroundColor: dark ? 'rgba(0,196,122,0.15)' : 'var(--color-primary-subtle)',
+                      color: dark ? '#4ade80' : 'var(--color-emerald-700, #047857)',
+                    }}
+                  >
+                    {f.badge}
+                  </span>
+                  <h3
+                    className="text-base font-bold mb-2 tracking-tight"
+                    style={{ color: dark ? '#fff' : '#0f172a' }}
+                  >
+                    {f.title}
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: dark ? 'rgba(255,255,255,0.55)' : '#64748b' }}
+                  >
+                    {f.description}
+                  </p>
+                </div>
+              </article>
+            )
+          })}
         </div>
       </div>
     </section>
@@ -847,6 +862,34 @@ const faqs = [
     q: 'How secure is my manual data?',
     a: 'All data is encrypted at rest and in transit. We are SOC 2 Type II compliant and GDPR ready.',
   },
+  {
+    q: 'What file formats can I upload?',
+    a: 'ClearGuide accepts PDF, Word (.docx), and plain text files. Our converter automatically structures the content, adds headings, and generates the accessible digital version.',
+  },
+  {
+    q: 'Can users download a copy of the guide?',
+    a: 'Yes. End users can download guides in PDF or DOCX format directly from the viewer — no account required. Manufacturers can control which export formats are available per guide.',
+  },
+  {
+    q: 'Does ClearGuide work on mobile devices?',
+    a: 'Absolutely. All guides are fully responsive and optimised for iOS and Android. The QR scan flow is designed specifically for smartphones — no app installation needed.',
+  },
+  {
+    q: 'How does the QR code system work?',
+    a: 'When you publish a manual, ClearGuide generates a unique QR code linked to that guide. Print it on packaging or the product itself and users are taken directly to the correct manual when they scan it.',
+  },
+  {
+    q: 'Can I embed video instructions in a guide?',
+    a: 'Yes. On Pro and Enterprise plans you can embed YouTube, Vimeo, or self-hosted video clips alongside text and infographic content, giving users a richer, step-by-step experience.',
+  },
+  {
+    q: 'What accessibility standards does ClearGuide meet?',
+    a: 'ClearGuide is designed to WCAG 2.2 Level AAA — the highest accessibility standard. This includes keyboard navigation, high-contrast mode, screen-reader support, adjustable text sizes, and full audio descriptions.',
+  },
+  {
+    q: 'Is there an API for integrating ClearGuide with our existing systems?',
+    a: 'Enterprise plans include full REST API access, allowing you to push manual updates, fetch analytics data, and automate QR code generation directly from your own product management tools.',
+  },
 ]
 
 function FAQ() {
@@ -1061,13 +1104,12 @@ export default function LandingPage() {
       <NavBar />
       <main id="main-content">
         <Hero />
-        <TrustBar />
         <Stats />
         <WhyClearGuide />
         <PlatformFeatures />
         <BeforeAfter />
-        <ManufacturerSection />
         <FindYourGuideSection />
+        <ManufacturerSection />
         <Testimonials />
         <Pricing />
         <FAQ />
