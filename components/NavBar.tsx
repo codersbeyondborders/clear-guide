@@ -2,11 +2,18 @@
 
 import Link from 'next/link'
 import { BookOpen } from 'lucide-react'
-import { ThemeToggle } from '@/components/ThemeToggle'
+
+const NAV_LINKS = [
+  { label: 'Features', href: '#features' },
+  { label: 'Pricing',  href: '#pricing'  },
+  { label: 'FAQ',      href: '#faq'      },
+]
 
 export function NavBar() {
   return (
-    <header className="sticky top-0 z-40 border-b" style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}>
+    <header
+      className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-sm"
+    >
       <nav
         className="container flex h-16 items-center justify-between"
         aria-label="Main navigation"
@@ -14,32 +21,28 @@ export function NavBar() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+          className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
           aria-label="ClearGuide home"
         >
           <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
             style={{ backgroundColor: 'var(--color-primary)' }}
             aria-hidden="true"
           >
-            <BookOpen className="w-4 h-4" style={{ color: 'var(--color-primary-foreground)' }} />
+            <BookOpen className="w-4 h-4 text-white" />
           </div>
-          <div className="flex flex-col leading-none">
-            <span className="text-xs font-bold" style={{ color: 'var(--color-foreground)' }}>Clear</span>
-            <span className="text-xs font-bold" style={{ color: 'var(--color-primary)' }}>Guide</span>
-          </div>
+          <span className="text-sm font-bold text-slate-900 tracking-tight">
+            Clear<span style={{ color: 'var(--color-primary)' }}>Guide</span>
+          </span>
         </Link>
 
         {/* Centre links */}
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-          {(['Features', 'Pricing', 'Help', 'About'] as const).map((label) => (
+        <div className="hidden md:flex items-center gap-7 text-sm font-medium">
+          {NAV_LINKS.map(({ label, href }) => (
             <a
               key={label}
-              href={`#${label.toLowerCase()}`}
-              className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-              style={{ color: 'var(--color-muted-foreground)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-foreground)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted-foreground)')}
+              href={href}
+              className="text-slate-500 hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-sm"
             >
               {label}
             </a>
@@ -48,18 +51,10 @@ export function NavBar() {
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Link
-            href="/sign-in"
-            className="btn-ghost hidden sm:inline-flex text-sm"
-          >
-            Login
+          <Link href="/sign-in" className="btn-ghost hidden sm:inline-flex text-sm text-slate-600">
+            Log in
           </Link>
-          <Link
-            href="/sign-up"
-            className="btn-primary text-sm"
-            style={{ borderRadius: '9999px' }}
-          >
+          <Link href="/sign-up" className="btn-primary text-sm">
             Get started
           </Link>
         </div>
