@@ -125,44 +125,74 @@ function TextModeContent({ manual }: { manual: Manual }) {
       <div className="flex flex-1 min-h-0">
         {/* Sidebar (desktop) */}
         <aside
-          className="hidden lg:flex flex-col w-56 shrink-0 border-r overflow-y-auto"
+          className="hidden lg:flex flex-col w-64 shrink-0 border-r overflow-y-auto"
           style={{
             borderColor: highContrast ? '#555' : 'var(--color-border)',
             backgroundColor: highContrast ? '#111' : 'var(--color-card)',
           }}
           aria-label="Manual sections"
         >
-          <p
-            className="px-4 pt-4 pb-2 text-xs font-semibold uppercase tracking-wider"
-            style={{ color: highContrast ? '#aaa' : 'var(--color-muted-foreground)' }}
-          >
-            Sections
-          </p>
-          <nav>
+          {/* Sidebar header with progress */}
+          <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: highContrast ? '#444' : 'var(--color-border)' }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: highContrast ? '#aaa' : 'var(--color-muted-foreground)' }}>
+              Sections
+            </p>
+            {/* Progress bar */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: highContrast ? '#333' : 'var(--color-border)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${((activeIndex + 1) / total) * 100}%`,
+                    backgroundColor: 'var(--color-primary)',
+                  }}
+                  role="progressbar"
+                  aria-valuenow={activeIndex + 1}
+                  aria-valuemin={1}
+                  aria-valuemax={total}
+                  aria-label={`Section ${activeIndex + 1} of ${total}`}
+                />
+              </div>
+              <span className="text-xs tabular-nums shrink-0" style={{ color: highContrast ? '#aaa' : 'var(--color-muted-foreground)' }}>
+                {activeIndex + 1}/{total}
+              </span>
+            </div>
+          </div>
+          <nav className="flex-1 overflow-y-auto">
             <ul role="list">
-              {manual.sections.map((s, idx) => (
-                <li key={s.id}>
-                  <button
-                    onClick={() => goTo(idx)}
-                    className="w-full text-left px-4 py-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-                    style={{
-                      backgroundColor:
-                        idx === activeIndex
+              {manual.sections.map((s, idx) => {
+                const isActive = idx === activeIndex
+                const isDone   = idx < activeIndex
+                return (
+                  <li key={s.id}>
+                    <button
+                      onClick={() => goTo(idx)}
+                      className="w-full text-left px-4 py-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring flex items-start gap-2.5"
+                      style={{
+                        backgroundColor: isActive
                           ? highContrast ? '#333' : 'var(--color-primary-subtle)'
                           : 'transparent',
-                      color:
-                        idx === activeIndex
+                        borderLeft: isActive ? '3px solid var(--color-primary)' : '3px solid transparent',
+                        color: isActive
                           ? highContrast ? '#fff' : 'var(--color-primary)'
                           : highContrast ? '#ccc' : 'var(--color-foreground)',
-                      fontWeight: idx === activeIndex ? 600 : 400,
-                    }}
-                    aria-current={idx === activeIndex ? 'true' : undefined}
-                  >
-                    <span className="text-xs font-bold mr-2 opacity-50">{s.sectionNumber}.</span>
-                    {s.title}
-                  </button>
-                </li>
-              ))}
+                        fontWeight: isActive ? 600 : 400,
+                        opacity: isDone ? 0.6 : 1,
+                      }}
+                      aria-current={isActive ? 'true' : undefined}
+                    >
+                      <span
+                        className="text-xs font-bold shrink-0 mt-0.5 w-5 text-right"
+                        style={{ color: isActive ? 'var(--color-primary)' : highContrast ? '#888' : 'var(--color-muted-foreground)' }}
+                        aria-hidden="true"
+                      >
+                        {s.sectionNumber}.
+                      </span>
+                      <span className="flex-1 text-pretty leading-snug">{s.title}</span>
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
           </nav>
         </aside>
@@ -201,16 +231,26 @@ function TextModeContent({ manual }: { manual: Manual }) {
             <article className="max-w-2xl">
               {/* Section heading */}
               <div className="flex items-start gap-3 mb-6">
-                <h1
-                  className="text-2xl font-bold flex-1 text-balance"
-                  style={{ color: highContrast ? '#fff' : 'var(--color-foreground)' }}
-                >
-                  {section.title}
-                </h1>
+                <div className="flex-1 min-w-0">
+                  {/* Step badge */}
+                  <span
+                    className="inline-flex items-center text-xs font-bold px-2.5 py-0.5 rounded-full mb-2"
+                    style={{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}
+                    aria-hidden="true"
+                  >
+                    Section {section.sectionNumber} of {total}
+                  </span>
+                  <h1
+                    className="text-2xl font-bold text-balance"
+                    style={{ color: highContrast ? '#fff' : 'var(--color-foreground)' }}
+                  >
+                    {section.title}
+                  </h1>
+                </div>
                 {ttsEnabled && (
                   <button
                     onClick={() => speak(`${section.title}. ${section.content ?? ''}`)}
-                    className="w-9 h-9 rounded-full border flex items-center justify-center shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)' }}
                     aria-label="Read section aloud"
                   >

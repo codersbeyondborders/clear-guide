@@ -26,7 +26,6 @@ interface ViewerHeaderProps {
   manualId: string
   selectedLang: string
   onLangChange: (lang: string) => void
-  /** Text content to use for the plain-text download (all sections joined) */
   plainText?: string
   muted?: boolean
   onToggleMute?: () => void
@@ -56,7 +55,7 @@ export const LANGUAGE_LABELS: Record<string, { label: string; flag: string }> = 
 }
 
 // ---------------------------------------------------------------------------
-// Logo
+// Logo (inline — no separate import needed)
 // ---------------------------------------------------------------------------
 function ClearGuideLogo() {
   return (
@@ -77,16 +76,15 @@ function ClearGuideLogo() {
           <rect x="2" y="14" width="10" height="2" rx="1" fill="white" opacity="0.6" />
         </svg>
       </div>
-      <div className="leading-none hidden sm:block">
-        <span className="block text-xs font-bold" style={{ color: 'var(--color-foreground)' }}>Clear</span>
-        <span className="block text-xs font-bold" style={{ color: 'var(--color-primary)' }}>Guide</span>
-      </div>
+      <span className="hidden sm:block text-sm font-bold leading-none" style={{ color: 'var(--color-foreground)' }}>
+        Clear<span style={{ color: 'var(--color-primary)' }}>Guide</span>
+      </span>
     </a>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Info drawer — slide up from bottom on mobile, panel on desktop
+// Info drawer
 // ---------------------------------------------------------------------------
 function InfoDrawer({
   info,
@@ -97,7 +95,6 @@ function InfoDrawer({
   open: boolean
   onClose: () => void
 }) {
-  // Trap focus inside when open
   const drawerRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -107,9 +104,7 @@ function InfoDrawer({
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     )
     focusable[0]?.focus()
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
   }, [open, onClose])
@@ -117,47 +112,40 @@ function InfoDrawer({
   if (!open) return null
 
   const rows: { icon: typeof BookOpen; label: string; value: string | null | undefined }[] = [
-    { icon: BookOpen, label: 'Product',  value: info.productName },
-    { icon: Tag,      label: 'Brand',    value: info.brand },
-    { icon: Globe,    label: 'Model',    value: info.productModel },
-    { icon: Hash,     label: 'Serial',   value: info.serialNumber },
+    { icon: BookOpen, label: 'Product',   value: info.productName },
+    { icon: Tag,      label: 'Brand',     value: info.brand },
+    { icon: Globe,    label: 'Model',     value: info.productModel },
+    { icon: Hash,     label: 'Serial',    value: info.serialNumber },
     {
       icon: Globe,
       label: 'Languages',
-      value: info.languages
-        .map(l => LANGUAGE_LABELS[l]?.label ?? l.toUpperCase())
-        .join(', '),
+      value: info.languages.map(l => LANGUAGE_LABELS[l]?.label ?? l.toUpperCase()).join(', '),
     },
   ].filter(r => r.value)
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden="true"
       />
-
-      {/* Panel */}
       <div
         ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-label="Product information"
+        id="info-drawer"
         className="fixed bottom-0 left-0 right-0 z-50 sm:left-auto sm:right-4 sm:bottom-auto sm:top-16 sm:w-80 rounded-t-3xl sm:rounded-2xl border shadow-2xl"
         style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       >
-        {/* Handle */}
-        <div className="sm:hidden flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full" style={{ backgroundColor: 'var(--color-border)' }} aria-hidden="true" />
+        {/* Handle bar (mobile only) */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1" aria-hidden="true">
+          <div className="w-10 h-1 rounded-full" style={{ backgroundColor: 'var(--color-border)' }} />
         </div>
 
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-5 py-4 border-b"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <h2 className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>
             Product Information
           </h2>
@@ -172,7 +160,7 @@ function InfoDrawer({
         </div>
 
         {/* Content */}
-        <dl className="px-5 py-4 space-y-3">
+        <dl className="px-5 py-4 space-y-4">
           {rows.map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-start gap-3">
               <dt className="flex items-center gap-2 w-24 shrink-0">
@@ -204,6 +192,42 @@ function InfoDrawer({
 }
 
 // ---------------------------------------------------------------------------
+// Toolbar icon button helper
+// ---------------------------------------------------------------------------
+function ToolBtn({
+  onClick,
+  label,
+  pressed,
+  active,
+  disabled,
+  children,
+}: {
+  onClick: () => void
+  label: string
+  pressed?: boolean
+  active?: boolean
+  disabled?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-8 h-8 flex items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 disabled:cursor-not-allowed"
+      style={{
+        borderColor: active ? 'var(--color-primary)' : 'var(--color-border)',
+        color: active ? 'var(--color-primary)' : 'var(--color-muted-foreground)',
+        backgroundColor: active ? 'var(--color-primary-subtle)' : 'var(--color-card)',
+      }}
+      aria-label={label}
+      aria-pressed={pressed}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 export function ViewerHeader({
@@ -217,14 +241,16 @@ export function ViewerHeader({
   showMute = false,
 }: ViewerHeaderProps) {
   const router = useRouter()
-  const [langOpen, setLangOpen]       = useState(false)
+  const [langOpen,     setLangOpen]     = useState(false)
   const [downloadOpen, setDownloadOpen] = useState(false)
-  const [infoOpen, setInfoOpen]       = useState(false)
+  const [infoOpen,     setInfoOpen]     = useState(false)
 
   const { increaseFontSize, decreaseFontSize, fontSize, toggleHighContrast, highContrast } =
     useAccessibility()
 
   const langInfo = LANGUAGE_LABELS[selectedLang] ?? { label: selectedLang.toUpperCase(), flag: '🌐' }
+
+  const FONT_LABELS: Record<string, string> = { sm: 'Small', md: 'Normal', lg: 'Large', xl: 'X-Large' }
 
   // Close dropdowns on outside click
   const headerRef = useRef<HTMLElement>(null)
@@ -255,8 +281,6 @@ export function ViewerHeader({
     URL.revokeObjectURL(url)
   }
 
-  const FONT_LABELS: Record<string, string> = { sm: 'Small', md: 'Normal', lg: 'Large', xl: 'X-Large' }
-
   return (
     <>
       <header
@@ -265,11 +289,12 @@ export function ViewerHeader({
         style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       >
         <div className="w-full px-3 h-14 flex items-center gap-2">
-          {/* Back */}
+
+          {/* Back button */}
           <button
             onClick={() => router.push(`/manual/${manualId}`)}
-            className="w-8 h-8 flex items-center justify-center rounded-full border transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)' }}
+            className="w-8 h-8 flex items-center justify-center rounded-lg border transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)', backgroundColor: 'var(--color-card)' }}
             aria-label="Back to manual overview"
           >
             <ArrowLeft className="w-4 h-4" aria-hidden="true" />
@@ -278,142 +303,91 @@ export function ViewerHeader({
           {/* Logo */}
           <ClearGuideLogo />
 
-          {/* Breadcrumb — product name */}
-          <div className="flex items-center gap-1 text-sm min-w-0">
-            <span style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true">/</span>
-            <span className="font-medium truncate" style={{ color: 'var(--color-foreground)' }}>
+          {/* Divider + product breadcrumb */}
+          <div className="flex items-center gap-1.5 min-w-0 mx-1">
+            <span className="text-slate-300 select-none" aria-hidden="true">/</span>
+            <span
+              className="text-sm font-medium truncate max-w-[160px] sm:max-w-xs"
+              style={{ color: 'var(--color-foreground)' }}
+            >
               {manualInfo.productName}
             </span>
           </div>
 
-          {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Toolbar */}
+          {/* ── Toolbar ─────────────────────────────────────────────── */}
           <div className="flex items-center gap-1 shrink-0">
 
-            {/* Mute (only when TTS active) */}
+            {/* Mute (TTS only) */}
             {showMute && onToggleMute && (
-              <button
+              <ToolBtn
                 onClick={onToggleMute}
-                className="w-9 h-9 flex items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                style={{ borderColor: 'var(--color-border)', color: muted ? 'var(--color-muted-foreground)' : 'var(--color-primary)', backgroundColor: 'var(--color-card)' }}
-                aria-label={muted ? 'Unmute audio' : 'Mute audio'}
-                aria-pressed={muted}
+                label={muted ? 'Unmute audio' : 'Mute audio'}
+                pressed={muted}
+                active={!muted}
               >
                 {muted
-                  ? <VolumeX className="w-4 h-4" aria-hidden="true" />
-                  : <Volume2 className="w-4 h-4" aria-hidden="true" />
+                  ? <VolumeX className="w-3.5 h-3.5" aria-hidden="true" />
+                  : <Volume2 className="w-3.5 h-3.5" aria-hidden="true" />
                 }
-              </button>
+              </ToolBtn>
             )}
+
+            {/* Font size group — visible on sm+ */}
+            <div className="hidden sm:flex items-center gap-0.5 px-1 rounded-lg border" style={{ borderColor: 'var(--color-border)' }}>
+              <button
+                onClick={decreaseFontSize}
+                disabled={fontSize === 'sm'}
+                className="w-7 h-7 flex items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                style={{ color: 'var(--color-muted-foreground)' }}
+                aria-label={`Decrease font size (current: ${FONT_LABELS[fontSize]})`}
+              >
+                <ZoomOut className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+              <span className="text-[10px] font-semibold w-5 text-center select-none" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true">
+                A
+              </span>
+              <button
+                onClick={increaseFontSize}
+                disabled={fontSize === 'xl'}
+                className="w-7 h-7 flex items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                style={{ color: 'var(--color-muted-foreground)' }}
+                aria-label={`Increase font size (current: ${FONT_LABELS[fontSize]})`}
+              >
+                <ZoomIn className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* High contrast */}
+            <ToolBtn
+              onClick={toggleHighContrast}
+              label={highContrast ? 'Disable high contrast' : 'Enable high contrast'}
+              pressed={highContrast}
+              active={highContrast}
+            >
+              <Contrast className="w-3.5 h-3.5" aria-hidden="true" />
+            </ToolBtn>
 
             {/* Theme toggle */}
             <ThemeToggle />
 
-            {/* Zoom out */}
-            <button
-              onClick={decreaseFontSize}
-              disabled={fontSize === 'sm'}
-              className="w-9 h-9 flex items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)', backgroundColor: 'var(--color-card)' }}
-              aria-label={`Decrease font size (current: ${FONT_LABELS[fontSize]})`}
-            >
-              <ZoomOut className="w-4 h-4" aria-hidden="true" />
-            </button>
-
-            {/* Zoom in */}
-            <button
-              onClick={increaseFontSize}
-              disabled={fontSize === 'xl'}
-              className="w-9 h-9 flex items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted-foreground)', backgroundColor: 'var(--color-card)' }}
-              aria-label={`Increase font size (current: ${FONT_LABELS[fontSize]})`}
-            >
-              <ZoomIn className="w-4 h-4" aria-hidden="true" />
-            </button>
-
-            {/* High contrast toggle */}
-            <button
-              onClick={toggleHighContrast}
-              className="w-9 h-9 flex items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              style={{
-                borderColor: highContrast ? 'var(--color-primary)' : 'var(--color-border)',
-                color: highContrast ? 'var(--color-primary)' : 'var(--color-muted-foreground)',
-                backgroundColor: highContrast ? 'var(--color-primary-subtle)' : 'var(--color-card)',
-              }}
-              aria-label={highContrast ? 'Disable high contrast' : 'Enable high contrast'}
-              aria-pressed={highContrast}
-            >
-              <Contrast className="w-4 h-4" aria-hidden="true" />
-            </button>
-
             {/* Info */}
-            <button
+            <ToolBtn
               onClick={() => setInfoOpen(o => !o)}
-              className="w-9 h-9 flex items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              style={{
-                borderColor: infoOpen ? 'var(--color-primary)' : 'var(--color-border)',
-                color: infoOpen ? 'var(--color-primary)' : 'var(--color-muted-foreground)',
-                backgroundColor: infoOpen ? 'var(--color-primary-subtle)' : 'var(--color-card)',
-              }}
-              aria-label="Product information"
-              aria-pressed={infoOpen}
-              aria-expanded={infoOpen}
-              aria-controls="info-drawer"
+              label="Product information"
+              pressed={infoOpen}
+              active={infoOpen}
             >
-              <Info className="w-4 h-4" aria-hidden="true" />
-            </button>
-
-            {/* Download menu */}
-            <div className="relative">
-              <button
-                onClick={() => setDownloadOpen(o => !o)}
-                className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-full border text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                style={{ borderColor: 'var(--color-border)', color: 'var(--color-foreground)', backgroundColor: 'var(--color-card)' }}
-                aria-haspopup="menu"
-                aria-expanded={downloadOpen}
-              >
-                <Download className="w-3.5 h-3.5" aria-hidden="true" />
-                Save
-                <ChevronDown className="w-3 h-3" aria-hidden="true" />
-              </button>
-              {downloadOpen && (
-                <div
-                  className="absolute right-0 top-full mt-1 w-40 rounded-xl border shadow-lg z-30 overflow-hidden"
-                  style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
-                  role="menu"
-                >
-                  <button
-                    role="menuitem"
-                    onClick={() => handleDownload('txt')}
-                    className="w-full text-left px-4 py-2.5 text-sm transition-colors focus-visible:outline-none"
-                    style={{ color: 'var(--color-foreground)' }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-background-subtle)')}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    Save as TXT
-                  </button>
-                  <button
-                    role="menuitem"
-                    onClick={() => handleDownload('json')}
-                    className="w-full text-left px-4 py-2.5 text-sm transition-colors focus-visible:outline-none"
-                    style={{ color: 'var(--color-foreground)' }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-background-subtle)')}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    Save as JSON
-                  </button>
-                </div>
-              )}
-            </div>
+              <Info className="w-3.5 h-3.5" aria-hidden="true" />
+            </ToolBtn>
 
             {/* Language picker */}
-            {manualInfo.languages.length > 0 && (
+            {manualInfo.languages.length > 1 && (
               <div className="relative">
                 <button
                   onClick={() => setLangOpen(o => !o)}
-                  className="flex items-center gap-1 h-9 px-2.5 rounded-full border text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex items-center gap-1 h-8 px-2.5 rounded-lg border text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-foreground)', backgroundColor: 'var(--color-card)' }}
                   aria-haspopup="listbox"
                   aria-expanded={langOpen}
@@ -424,23 +398,25 @@ export function ViewerHeader({
                 </button>
                 {langOpen && (
                   <div
-                    className="absolute right-0 top-full mt-1 w-44 rounded-xl border shadow-lg z-30 overflow-hidden"
+                    className="absolute right-0 top-full mt-1 w-44 rounded-xl border shadow-xl z-30 overflow-hidden py-1"
                     style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
                     role="listbox"
                     aria-label="Select language"
                   >
                     {manualInfo.languages.map(lang => {
-                      const info = LANGUAGE_LABELS[lang] ?? { label: lang.toUpperCase(), flag: '🌐' }
+                      const info     = LANGUAGE_LABELS[lang] ?? { label: lang.toUpperCase(), flag: '🌐' }
+                      const isActive = selectedLang === lang
                       return (
                         <button
                           key={lang}
                           role="option"
-                          aria-selected={selectedLang === lang}
+                          aria-selected={isActive}
                           onClick={() => { onLangChange(lang); setLangOpen(false) }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors focus-visible:outline-none"
                           style={{
-                            color: selectedLang === lang ? 'var(--color-primary)' : 'var(--color-foreground)',
-                            backgroundColor: selectedLang === lang ? 'var(--color-primary-subtle)' : 'transparent',
+                            color: isActive ? 'var(--color-primary)' : 'var(--color-foreground)',
+                            backgroundColor: isActive ? 'var(--color-primary-subtle)' : 'transparent',
+                            fontWeight: isActive ? 600 : 400,
                           }}
                         >
                           <span aria-hidden="true">{info.flag}</span>
@@ -452,14 +428,56 @@ export function ViewerHeader({
                 )}
               </div>
             )}
+
+            {/* Download */}
+            <div className="relative">
+              <button
+                onClick={() => setDownloadOpen(o => !o)}
+                className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-foreground)', backgroundColor: 'var(--color-card)' }}
+                aria-haspopup="menu"
+                aria-expanded={downloadOpen}
+              >
+                <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                Save
+                <ChevronDown className="w-3 h-3" aria-hidden="true" />
+              </button>
+              {downloadOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1 w-40 rounded-xl border shadow-xl z-30 overflow-hidden py-1"
+                  style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+                  role="menu"
+                >
+                  <button
+                    role="menuitem"
+                    onClick={() => handleDownload('txt')}
+                    className="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-background-subtle focus-visible:outline-none"
+                    style={{ color: 'var(--color-foreground)' }}
+                  >
+                    Save as TXT
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={() => handleDownload('json')}
+                    className="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-background-subtle focus-visible:outline-none"
+                    style={{ color: 'var(--color-foreground)' }}
+                  >
+                    Save as JSON
+                  </button>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </header>
 
-      {/* Info drawer (portal-like, rendered outside header so z-index is correct) */}
-      <div id="info-drawer">
-        <InfoDrawer info={manualInfo} open={infoOpen} onClose={() => setInfoOpen(false)} />
-      </div>
+      {/* Info drawer */}
+      <InfoDrawer
+        info={manualInfo}
+        open={infoOpen}
+        onClose={() => setInfoOpen(false)}
+      />
     </>
   )
 }
