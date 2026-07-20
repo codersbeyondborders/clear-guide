@@ -72,17 +72,23 @@ function InfographicContent({ manual }: { manual: Manual }) {
         onLangChange={setSelectedLang}
       />
 
-      <main id="main-content" className="flex-1 p-4 lg:p-6">
+      <main id="main-content" className="flex-1 p-4 lg:p-8">
         {/* Page title */}
-        <div className="mb-6">
+        <div className="mb-6 max-w-4xl">
+          <span
+            className="inline-flex items-center text-xs font-bold px-2.5 py-0.5 rounded-full mb-2"
+            style={{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}
+          >
+            Visual Overview
+          </span>
           <h1
-            className={`text-xl font-bold ${fontSizeClass}`}
+            className={`text-2xl font-bold text-balance ${fontSizeClass}`}
             style={{ color: highContrast ? '#fff' : 'var(--color-foreground)' }}
           >
             {manual.productName}
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: highContrast ? '#aaa' : 'var(--color-muted-foreground)' }}>
-            Visual product overview &mdash; {manual.sections.length} section{manual.sections.length !== 1 ? 's' : ''}
+          <p className="text-sm mt-1" style={{ color: highContrast ? '#aaa' : 'var(--color-muted-foreground)' }}>
+            {manual.sections.length} section{manual.sections.length !== 1 ? 's' : ''} — tap any card to expand details
           </p>
         </div>
 
@@ -155,15 +161,17 @@ function InfographicContent({ manual }: { manual: Manual }) {
 
                   {/* Text body */}
                   <div className="p-4 flex flex-col gap-2 flex-1">
-                    <h2
-                      className={`font-bold leading-snug ${fontSizeClass}`}
-                      style={{ color: highContrast ? '#fff' : 'var(--color-foreground)' }}
-                    >
-                      {section.title}
-                    </h2>
+                    <div className="flex items-start justify-between gap-2">
+                      <h2
+                        className={`font-bold leading-snug flex-1 ${fontSizeClass}`}
+                        style={{ color: highContrast ? '#fff' : 'var(--color-foreground)' }}
+                      >
+                        {section.title}
+                      </h2>
+                    </div>
 
                     {section.content ? (
-                      <div>
+                      <div id={`section-content-${section.id}`}>
                         <p
                           className={`text-sm leading-relaxed ${isExpanded ? '' : 'line-clamp-3'}`}
                           style={{ color: highContrast ? '#ccc' : 'var(--color-muted-foreground)' }}
@@ -173,7 +181,7 @@ function InfographicContent({ manual }: { manual: Manual }) {
                         {section.content.length > 150 && (
                           <button
                             onClick={() => setExpanded(isExpanded ? null : section.id)}
-                            className="mt-1 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="mt-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             style={{ color: 'var(--color-primary)' }}
                             aria-expanded={isExpanded}
                             aria-controls={`section-content-${section.id}`}
@@ -184,10 +192,10 @@ function InfographicContent({ manual }: { manual: Manual }) {
                       </div>
                     ) : (
                       <p
-                        className="text-sm italic"
+                        className="text-xs italic"
                         style={{ color: highContrast ? '#666' : 'var(--color-muted-foreground)' }}
                       >
-                        No description.
+                        No description available.
                       </p>
                     )}
                   </div>
