@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { QRCodeDisplay } from '@/components/QRCodeDisplay'
 import { ManualSearchForm } from '@/components/ManualSearchForm'
-import { ChevronDown, FlaskConical, ArrowRight, Users } from 'lucide-react'
+import { ChevronDown, FlaskConical, ArrowRight, Users, ScanSearch } from 'lucide-react'
 import { useEndUser } from '@/hooks/useEndUser'
 
 // ---------------------------------------------------------------------------
@@ -85,6 +85,27 @@ export default function UserPortalPage() {
               Scan your product QR code or search by product details to access your accessible guide.
             </p>
           </div>
+
+          {/* Primary find CTA — QR / specs / photo */}
+          <Link
+            href="/find"
+            className="flex items-center justify-between gap-4 px-5 py-4 rounded-xl border transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
+            aria-label="Find your product by QR code, specs, or photo"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <ScanSearch className="w-5 h-5 shrink-0" style={{ color: 'var(--color-primary-foreground)' }} aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-sm font-bold" style={{ color: 'var(--color-primary-foreground)' }}>
+                  Find your product
+                </p>
+                <p className="text-xs truncate" style={{ color: 'color-mix(in srgb, var(--color-primary-foreground) 80%, transparent)' }}>
+                  Scan a QR code, enter specs, or use a photo
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary-foreground)' }} aria-hidden="true" />
+          </Link>
 
           {/* QR Scan card */}
           <section aria-labelledby="qr-section-title" className="card p-8 flex flex-col items-center gap-6 text-center">

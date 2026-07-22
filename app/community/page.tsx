@@ -185,11 +185,11 @@ export default function CommunityPage() {
           </Link>
           <div className="flex items-center gap-2">
             <Link
-              href="/user"
+              href="/find"
               className="text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
               style={{ color: 'var(--color-muted-foreground)' }}
             >
-              Find a manual
+              Find a product
             </Link>
             {!user ? (
               <a
