@@ -75,7 +75,7 @@ function Hero() {
           {/* Right — hero image */}
           <div className="order-1 md:order-2 rounded-2xl overflow-hidden border border-slate-200 shadow-2xl shadow-slate-200/60">
             <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hero-8tPcFkA81Hr8dcec9WRNOhBbBVqiW9.webp"
+              src="/images/hero.png"
               alt="Split illustration: frustrated user struggling with paper manual on the left, happy user accessing digital guide on phone on the right"
               width={640}
               height={480}
@@ -398,7 +398,7 @@ function BeforeAfter() {
         <div className="grid sm:grid-cols-2 gap-4 mb-10">
           <figure className="relative rounded-2xl overflow-hidden shadow-md">
             <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/before-ftzlTJ2qEGFIpK2fQR4hTJ87Yd62ZC.webp"
+              src="/images/before.png"
               alt="Elderly woman struggling to read a tiny paper manual with a magnifying glass"
               width={600}
               height={400}
@@ -416,7 +416,7 @@ function BeforeAfter() {
 
           <figure className="relative rounded-2xl overflow-hidden shadow-md">
             <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/after-Fxe8lwx6J74SmS3LZvmRS5ye0R8CqI.webp"
+              src="/images/after.png"
               alt="Same woman now smiling, holding a phone showing the ClearGuide digital manual for the coffee maker"
               width={600}
               height={400}
