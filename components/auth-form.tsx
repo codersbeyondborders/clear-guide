@@ -8,9 +8,10 @@ import { createClient } from '@/lib/supabase/client'
 interface AuthFormProps {
   mode: 'sign-in' | 'sign-up'
   redirectTo?: string
+  userType?: 'manufacturer' | 'end_user'
 }
 
-export function AuthForm({ mode, redirectTo = '/manufacturer/dashboard' }: AuthFormProps) {
+export function AuthForm({ mode, redirectTo = '/manufacturer/dashboard', userType = 'manufacturer' }: AuthFormProps) {
   const router = useRouter()
   const isSignUp = mode === 'sign-up'
 
@@ -36,7 +37,7 @@ export function AuthForm({ mode, redirectTo = '/manufacturer/dashboard' }: AuthF
           email,
           password,
           options: {
-            data: { name },
+            data: { name, user_type: userType },
             emailRedirectTo:
               process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
               `${window.location.origin}/auth/callback`,
@@ -148,7 +149,11 @@ export function AuthForm({ mode, redirectTo = '/manufacturer/dashboard' }: AuthF
       <p className="text-sm text-center text-muted-foreground">
         {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
         <a
-          href={isSignUp ? '/sign-in' : '/sign-up'}
+          href={
+            userType === 'end_user'
+              ? isSignUp ? '/user/sign-in' : '/user/sign-up'
+              : isSignUp ? '/sign-in' : '/sign-up'
+          }
           className="text-primary font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
         >
           {isSignUp ? 'Sign in' : 'Sign up'}

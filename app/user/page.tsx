@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { QRCodeDisplay } from '@/components/QRCodeDisplay'
 import { ManualSearchForm } from '@/components/ManualSearchForm'
-import { ChevronDown, FlaskConical, ArrowRight } from 'lucide-react'
+import { ChevronDown, FlaskConical, ArrowRight, Users, ScanSearch } from 'lucide-react'
+import { useEndUser } from '@/hooks/useEndUser'
 
 // ---------------------------------------------------------------------------
 // Demo products (seeded via /api/seed/demo-products)
@@ -30,21 +31,47 @@ const BRAND_COLORS: Record<string, string> = {
 export default function UserPortalPage() {
   const router = useRouter()
   const [demoOpen, setDemoOpen] = useState(false)
+  const { user, isAuthenticated } = useEndUser()
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans">
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold text-primary" aria-label="ClearGuide home">
+        <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between gap-3">
+          <Link href="/" className="text-xl font-bold text-primary shrink-0" aria-label="ClearGuide home">
             ClearGuide
           </Link>
-          <Link
-            href="/manufacturer/login"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-2 focus-visible:outline-primary rounded"
-          >
-            Manufacturer Login
-          </Link>
+
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Community link */}
+            <Link
+              href="/community"
+              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-2 py-1"
+              aria-label="Community hub"
+            >
+              <Users className="w-4 h-4 shrink-0" aria-hidden="true" />
+              Community
+            </Link>
+
+            {/* Auth state */}
+            {isAuthenticated ? (
+              <span
+                className="text-sm font-medium truncate max-w-[120px]"
+                style={{ color: 'var(--color-foreground)' }}
+                title={(user?.user_metadata?.name as string | undefined) ?? user?.email ?? ''}
+              >
+                {(user?.user_metadata?.name as string | undefined) ?? user?.email}
+              </span>
+            ) : (
+              <Link
+                href="/user/sign-in"
+                className="inline-flex items-center h-8 px-3 rounded-xl border text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+                style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', backgroundColor: 'var(--color-primary-subtle)' }}
+              >
+                Sign in
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 
@@ -59,6 +86,27 @@ export default function UserPortalPage() {
             </p>
           </div>
 
+          {/* Primary find CTA — QR / specs / photo */}
+          <Link
+            href="/find"
+            className="flex items-center justify-between gap-4 px-5 py-4 rounded-xl border transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
+            aria-label="Find your product by QR code, specs, or photo"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <ScanSearch className="w-5 h-5 shrink-0" style={{ color: 'var(--color-primary-foreground)' }} aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-sm font-bold" style={{ color: 'var(--color-primary-foreground)' }}>
+                  Find your product
+                </p>
+                <p className="text-xs truncate" style={{ color: 'color-mix(in srgb, var(--color-primary-foreground) 80%, transparent)' }}>
+                  Scan a QR code, enter specs, or use a photo
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary-foreground)' }} aria-hidden="true" />
+          </Link>
+
           {/* QR Scan card */}
           <section aria-labelledby="qr-section-title" className="card p-8 flex flex-col items-center gap-6 text-center">
             <div>
@@ -69,6 +117,34 @@ export default function UserPortalPage() {
             </div>
             <QRCodeDisplay targetId="demo-qr-123" />
           </section>
+
+          {/* Community banner */}
+          <Link
+            href="/community"
+            className="flex items-center justify-between gap-4 px-5 py-4 rounded-xl border transition-all hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            style={{
+              backgroundColor: 'var(--color-primary-subtle)',
+              borderColor: 'var(--color-primary)',
+            }}
+            aria-label="Browse the community hub for discussions and top-rated products"
+          >
+            <div className="flex items-center gap-3">
+              <Users
+                className="w-5 h-5 shrink-0"
+                style={{ color: 'var(--color-primary)' }}
+                aria-hidden="true"
+              />
+              <div>
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
+                  Community
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+                  Browse discussions and top-rated manuals
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
+          </Link>
 
           {/* Divider */}
           <div className="flex items-center gap-4" aria-hidden="true">
