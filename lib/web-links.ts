@@ -44,12 +44,41 @@ export function specsToQuery(specs: DeviceSpecs, extra = ''): string {
 }
 
 /**
+ * Generic, spec-less resources shown when we have nothing to search for
+ * (e.g. the vision service was unavailable). Gives the user a useful starting
+ * point instead of an empty open-source panel.
+ */
+function genericWebLinks(): WebLink[] {
+  return [
+    {
+      id: 'google-generic',
+      label: 'Search Google',
+      description: 'Search the web for your device by name or model number.',
+      url: 'https://www.google.com/search?q=device+user+manual',
+    },
+    {
+      id: 'youtube-generic',
+      label: 'YouTube repair videos',
+      description: 'Browse step-by-step repair and setup walkthroughs.',
+      url: 'https://www.youtube.com/results?search_query=device+repair+how+to',
+    },
+    {
+      id: 'ifixit-generic',
+      label: 'iFixit guides',
+      description: 'Community repair guides and part diagrams.',
+      url: 'https://www.ifixit.com/',
+    },
+  ]
+}
+
+/**
  * Builds the array of external search deep-links.
- * Returns an empty array if there is nothing meaningful to search for.
+ * Falls back to generic resources when there is nothing meaningful to search
+ * for, so the open-source flow is never a dead end.
  */
 export function buildWebLinks(specs: DeviceSpecs): WebLink[] {
   const base = specsToQuery(specs)
-  if (!base) return []
+  if (!base) return genericWebLinks()
 
   const enc = (s: string) => encodeURIComponent(s)
 

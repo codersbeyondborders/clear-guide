@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Camera, Upload, Loader2, AlertCircle, X, CheckCircle2,
-  MessageCircle, Star, ChevronRight, ExternalLink, Lightbulb, ScanSearch,
+  MessageCircle, Star, ChevronRight, ExternalLink, Lightbulb, ScanSearch, Info,
 } from 'lucide-react'
 
 const MAX_BYTES = 8 * 1024 * 1024
@@ -29,6 +29,7 @@ interface WebLink { id: string; label: string; description: string; url: string 
 
 interface IdentifyResponse {
   validated: boolean
+  unavailable?: boolean
   specs: { brand: string | null; model: string | null; productType: string | null; keywords: string | null }
   description: string
   manuals?: ManualMatch[]
@@ -251,9 +252,24 @@ export function PhotoSearch() {
           {/* OPEN-SOURCE */}
           {!result.validated && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground text-pretty">
-                We don&apos;t have this exact product in our system yet. Here&apos;s what the community and the web can offer.
-              </p>
+              {result.unavailable ? (
+                <div
+                  className="flex items-start gap-3 px-4 py-3 rounded-xl border"
+                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-subtle)' }}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <Info className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
+                  <p className="text-sm text-foreground text-pretty">
+                    Automatic photo identification is temporarily unavailable. In the meantime, you can browse
+                    community discussions or search the web for help below.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-pretty">
+                  We don&apos;t have this exact product in our system yet. Here&apos;s what the community and the web can offer.
+                </p>
+              )}
 
               {/* AI tips */}
               {result.tips && result.tips.length > 0 && (

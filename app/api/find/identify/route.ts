@@ -134,6 +134,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       validated: false,
+      unavailable: vision.unavailable ?? false,
       specs,
       description: vision.description,
       tips: vision.tips,

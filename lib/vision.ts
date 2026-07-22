@@ -35,6 +35,13 @@ export interface VisionResult {
   tips: string[]
   /** True when the model is confident it identified a real product. */
   confident: boolean
+  /**
+   * True when the vision service itself could not run (missing/expired AWS
+   * credentials, Bedrock error, throttling, etc.). The caller should route the
+   * user to the open-source flow and show a "service temporarily unavailable"
+   * notice rather than a hard failure.
+   */
+  unavailable?: boolean
 }
 
 /** Maps a MIME type to the Bedrock ImageFormat enum. */
@@ -134,23 +141,37 @@ export async function identifyDeviceFromImage(
     }
   }
 
-  const client = getClient()
-  const cmd = new ConverseCommand({
-    modelId: MODEL_ID,
-    system: [{ text: SYSTEM_PROMPT }],
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { image: { format, source: { bytes } } },
-          { text: 'Identify this device and return the JSON described in your instructions.' },
-        ],
-      },
-    ],
-    inferenceConfig: { maxTokens: 1024, temperature: 0.2 },
-  })
+  try {
+    const client = getClient()
+    const cmd = new ConverseCommand({
+      modelId: MODEL_ID,
+      system: [{ text: SYSTEM_PROMPT }],
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { image: { format, source: { bytes } } },
+            { text: 'Identify this device and return the JSON described in your instructions.' },
+          ],
+        },
+      ],
+      inferenceConfig: { maxTokens: 1024, temperature: 0.2 },
+    })
 
-  const response = await client.send(cmd)
-  const text = response.output?.message?.content?.[0]?.text ?? ''
-  return parseVisionJSON(text)
+    const response = await client.send(cmd)
+    const text = response.output?.message?.content?.[0]?.text ?? ''
+    return parseVisionJSON(text)
+  } catch (err) {
+    // Bedrock unreachable (expired web-identity token, throttling, region
+    // issues, unsupported image, etc.). Degrade gracefully to the open-source
+    // flow instead of failing the whole request.
+    console.error('[vision] identifyDeviceFromImage failed:', err)
+    return {
+      specs: { brand: null, model: null, productType: null, keywords: null },
+      description: 'Automatic photo identification is temporarily unavailable.',
+      tips: [],
+      confident: false,
+      unavailable: true,
+    }
+  }
 }
