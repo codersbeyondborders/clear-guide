@@ -5,10 +5,13 @@ import useSWR from 'swr'
 import {
   BookOpen, FileText, LayoutGrid, Video, MessageSquare,
   Globe, ChevronDown, Download, Loader2, AlertCircle,
-  ArrowRight, ChevronRight,
+  ArrowRight, ChevronRight, Lock, Star, Users,
 } from 'lucide-react'
 import { useState } from 'react'
 import { LANGUAGE_LABELS } from '@/components/ViewerHeader'
+import { useEndUser } from '@/hooks/useEndUser'
+import { ReviewsSection } from '@/components/community/ReviewsSection'
+import { ForumSection } from '@/components/community/ForumSection'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -112,9 +115,12 @@ export default function ManualHubPage() {
     { revalidateOnFocus: false },
   )
 
+  const { user, isAuthenticated } = useEndUser()
+
   const [selectedLang, setSelectedLang] = useState<string | null>(null)
   const [langOpen, setLangOpen]         = useState(false)
   const [downloadOpen, setDownloadOpen] = useState(false)
+  const [activeTab, setActiveTab]       = useState<'reviews' | 'discussion'>('reviews')
 
   const lang     = selectedLang ?? manual?.languages?.[0] ?? 'en'
   const langInfo = LANGUAGE_LABELS[lang] ?? { label: lang.toUpperCase(), flag: '🌐' }
@@ -185,6 +191,17 @@ export default function ManualHubPage() {
           <ClearGuideLogo />
 
           <div className="flex items-center gap-2">
+            {/* Auth state */}
+            {!isAuthenticated && (
+              <a
+                href={`/user/sign-in?returnTo=/manual/${manualId}`}
+                className="hidden sm:inline-flex items-center h-8 px-3 rounded-xl border text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', backgroundColor: 'var(--color-primary-subtle)' }}
+              >
+                Sign in
+              </a>
+            )}
+
             {/* Language picker */}
             {manual.languages.length > 1 && (
               <div className="relative">
@@ -425,6 +442,43 @@ export default function ManualHubPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {MODES.map(mode => {
               const Icon = mode.icon
+              const isLocked = mode.id === 'chat' && !isAuthenticated
+
+              if (isLocked) {
+                return (
+                  <a
+                    key={mode.id}
+                    href={`/user/sign-up?returnTo=/manual/${manualId}`}
+                    className="group relative flex items-start gap-4 p-5 rounded-2xl border text-left transition-all opacity-70 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+                    aria-label="AI Chat — sign up to unlock"
+                  >
+                    <span
+                      className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
+                      style={{ backgroundColor: 'var(--color-border)', color: 'var(--color-muted-foreground)' }}
+                    >
+                      <Lock className="w-2.5 h-2.5" aria-hidden="true" />
+                      Sign up
+                    </span>
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: 'var(--color-background-subtle)' }}
+                      aria-hidden="true"
+                    >
+                      <MessageSquare className="w-5 h-5" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true" />
+                    </div>
+                    <div className="flex-1 min-w-0 pr-8">
+                      <p className="text-sm font-bold" style={{ color: 'var(--color-muted-foreground)' }}>
+                        AI Chat
+                      </p>
+                      <p className="text-xs mt-1 leading-relaxed text-pretty" style={{ color: 'var(--color-muted-foreground)' }}>
+                        Create a free account to ask questions and get instant answers from this manual.
+                      </p>
+                    </div>
+                  </a>
+                )
+              }
+
               return (
                 <button
                   key={mode.id}
@@ -515,6 +569,76 @@ export default function ManualHubPage() {
             </div>
           </section>
         )}
+
+        {/* ── Community — Reviews & Discussion ─────────────────────── */}
+        <section aria-labelledby="community-heading">
+          <div className="flex items-center gap-2 mb-3">
+            <h2
+              id="community-heading"
+              className="text-sm font-semibold uppercase tracking-wider"
+              style={{ color: 'var(--color-muted-foreground)' }}
+            >
+              Community
+            </h2>
+          </div>
+
+          {/* Tabs */}
+          <div
+            className="rounded-2xl border overflow-hidden"
+            style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+          >
+            <div
+              className="flex border-b"
+              style={{ borderColor: 'var(--color-border)' }}
+              role="tablist"
+              aria-label="Community tabs"
+            >
+              {([
+                { id: 'reviews' as const,    label: 'Reviews',    Icon: Star },
+                { id: 'discussion' as const, label: 'Discussion', Icon: Users },
+              ]).map(tab => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`panel-${tab.id}`}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="flex items-center gap-2 px-5 py-3.5 text-sm font-semibold border-b-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  style={{
+                    borderBottomColor: activeTab === tab.id ? 'var(--color-primary)' : 'transparent',
+                    color: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-muted-foreground)',
+                    backgroundColor: 'transparent',
+                  }}
+                >
+                  <tab.Icon className="w-4 h-4" aria-hidden="true" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-5">
+              {activeTab === 'reviews' && (
+                <div id="panel-reviews" role="tabpanel" aria-labelledby="tab-reviews">
+                  <ReviewsSection
+                    manualId={manualId}
+                    user={user}
+                    currentPath={`/manual/${manualId}`}
+                  />
+                </div>
+              )}
+              {activeTab === 'discussion' && (
+                <div id="panel-discussion" role="tabpanel" aria-labelledby="tab-discussion">
+                  <ForumSection
+                    manualId={manualId}
+                    user={user}
+                    currentPath={`/manual/${manualId}`}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
       </main>
 
       {/* ── Footer ─────────────────────────────────────────────────────── */}

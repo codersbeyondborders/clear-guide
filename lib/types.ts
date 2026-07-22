@@ -173,6 +173,60 @@ export interface AiChatMessage {
 }
 
 // ---------------------------------------------------------------------------
+// Community — user roles
+// ---------------------------------------------------------------------------
+export type UserType = 'manufacturer' | 'end_user'
+
+// ---------------------------------------------------------------------------
+// Community — product reviews
+// ---------------------------------------------------------------------------
+export interface ProductReview {
+  id: string
+  manualId: string
+  userId: string
+  rating: 1 | 2 | 3 | 4 | 5
+  title: string | null
+  body: string
+  helpfulCount: number
+  createdAt: string
+  updatedAt: string
+  author?: { name: string; image: string | null }
+}
+
+// ---------------------------------------------------------------------------
+// Community — forum threads
+// ---------------------------------------------------------------------------
+export interface ForumThread {
+  id: string
+  manualId: string
+  userId: string
+  title: string
+  body: string
+  isPinned: boolean
+  isSolved: boolean
+  replyCount: number
+  createdAt: string
+  updatedAt: string
+  author?: { name: string; image: string | null }
+  manualName?: string
+  productBrand?: string
+}
+
+// ---------------------------------------------------------------------------
+// Community — forum replies
+// ---------------------------------------------------------------------------
+export interface ForumReply {
+  id: string
+  threadId: string
+  userId: string
+  body: string
+  isSolution: boolean
+  createdAt: string
+  updatedAt: string
+  author?: { name: string; image: string | null }
+}
+
+// ---------------------------------------------------------------------------
 // API response wrappers
 // ---------------------------------------------------------------------------
 export interface ApiSuccess<T> {
