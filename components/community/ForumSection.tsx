@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import useSWR, { mutate } from 'swr'
-import { Loader2, AlertCircle, Plus } from 'lucide-react'
+import { Loader2, AlertCircle, Plus, Rss, MessageCircle } from 'lucide-react'
 import { ThreadCard } from './ThreadCard'
 import { GuestBanner } from './GuestBanner'
+import { PostFeed } from '@/components/hub/PostFeed'
 import type { ForumThread } from '@/lib/types'
 import type { User } from '@supabase/supabase-js'
 
@@ -217,52 +218,87 @@ export function ForumSection({ manualId, user, currentPath }: ForumSectionProps)
 
   const threads = data?.data ?? []
 
+  const currentUser = user
+    ? {
+        id: user.id,
+        name: (user.user_metadata?.name as string) ?? user.email ?? 'You',
+        avatarUrl: (user.user_metadata?.avatar_url as string) ?? null,
+      }
+    : null
+
   return (
-    <div className="flex flex-col gap-4" aria-label="Discussion forum">
-      {/* Header row */}
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
-          {threads.length} thread{threads.length !== 1 ? 's' : ''}
-        </p>
-        {user ? (
-          <NewThreadForm manualId={manualId} onSubmitted={() => mutate(swrKey)} />
-        ) : null}
-      </div>
+    <div className="flex flex-col gap-6" aria-label="Discussion forum">
 
-      {/* Guest CTA */}
-      {!user && (
-        <GuestBanner
-          message="Sign in to start a discussion or ask a question."
-          returnTo={currentPath}
+      {/* ── Hub Posts ──────────────────────────────────────────────── */}
+      <section aria-labelledby="hub-posts-heading">
+        <div className="flex items-center gap-2 mb-3">
+          <Rss className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary)' }} aria-hidden />
+          <h3 id="hub-posts-heading" className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>
+            Community Posts
+          </h3>
+        </div>
+        <p className="text-xs mb-3" style={{ color: 'var(--color-muted-foreground)' }}>
+          Share photos, videos, tips, or links related to this product.
+        </p>
+        <PostFeed
+          manualId={manualId}
+          currentUser={currentUser}
+          isAuthenticated={!!user}
         />
-      )}
+      </section>
 
-      {/* Thread list */}
-      {isLoading && (
-        <div className="flex justify-center py-6" role="status" aria-label="Loading threads">
-          <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true" />
+      {/* ── Discussion Threads ─────────────────────────────────────── */}
+      <section aria-labelledby="threads-heading">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary)' }} aria-hidden />
+            <h3 id="threads-heading" className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>
+              Discussion Threads
+            </h3>
+            <span className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+              ({threads.length})
+            </span>
+          </div>
+          {user && (
+            <NewThreadForm manualId={manualId} onSubmitted={() => mutate(swrKey)} />
+          )}
         </div>
-      )}
-      {error && (
-        <div
-          className="flex items-center gap-2 text-sm p-3 rounded-xl border"
-          style={{ borderColor: 'var(--color-destructive)', color: 'var(--color-destructive)', backgroundColor: 'color-mix(in srgb, var(--color-destructive) 8%, transparent)' }}
-          role="alert"
-        >
-          <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
-          Failed to load threads.
+
+        {/* Guest CTA */}
+        {!user && (
+          <GuestBanner
+            message="Sign in to start a discussion or ask a question."
+            returnTo={currentPath}
+          />
+        )}
+
+        {/* Thread list */}
+        {isLoading && (
+          <div className="flex justify-center py-6" role="status" aria-label="Loading threads">
+            <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true" />
+          </div>
+        )}
+        {error && (
+          <div
+            className="flex items-center gap-2 text-sm p-3 rounded-xl border"
+            style={{ borderColor: 'var(--color-destructive)', color: 'var(--color-destructive)', backgroundColor: 'color-mix(in srgb, var(--color-destructive) 8%, transparent)' }}
+            role="alert"
+          >
+            <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+            Failed to load threads.
+          </div>
+        )}
+        {!isLoading && threads.length === 0 && (
+          <p className="text-sm text-center py-6" style={{ color: 'var(--color-muted-foreground)' }}>
+            No threads yet. Start the first discussion.
+          </p>
+        )}
+        <div className="flex flex-col gap-2">
+          {threads.map(t => (
+            <ThreadCard key={t.id} thread={t} manualId={manualId} />
+          ))}
         </div>
-      )}
-      {!isLoading && threads.length === 0 && (
-        <p className="text-sm text-center py-6" style={{ color: 'var(--color-muted-foreground)' }}>
-          No threads yet. Start the first discussion.
-        </p>
-      )}
-      <div className="flex flex-col gap-2">
-        {threads.map(t => (
-          <ThreadCard key={t.id} thread={t} manualId={manualId} />
-        ))}
-      </div>
+      </section>
     </div>
   )
 }

@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { label: 'Get Started', href: '#how-it-works'  },
   { label: 'Features',    href: '#features'      },
   { label: 'Pricing',     href: '#pricing'       },
-  { label: 'Products Forum', href: '/community'  },
+  { label: 'Repair Hub',     href: '/community'  },
   { label: 'FAQ',         href: '#faq'           },
   { label: 'Contact',     href: '#contact'       },
 ]

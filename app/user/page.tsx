@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { QRCodeDisplay } from '@/components/QRCodeDisplay'
 import { ManualSearchForm } from '@/components/ManualSearchForm'
-import { ChevronDown, FlaskConical, ArrowRight, Users, ScanSearch } from 'lucide-react'
+import { ChevronDown, FlaskConical, ArrowRight, Users, ScanSearch, Wrench, UserCog } from 'lucide-react'
 import { useEndUser } from '@/hooks/useEndUser'
 
 // ---------------------------------------------------------------------------
@@ -43,25 +43,36 @@ export default function UserPortalPage() {
           </Link>
 
           <div className="flex items-center gap-2 min-w-0">
-            {/* Community link */}
+            {/* Repair Hub link */}
             <Link
               href="/community"
               className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-2 py-1"
-              aria-label="Community hub"
+              aria-label="Repair Hub"
             >
-              <Users className="w-4 h-4 shrink-0" aria-hidden="true" />
-              Community
+              <Wrench className="w-4 h-4 shrink-0" aria-hidden="true" />
+              Repair Hub
             </Link>
 
             {/* Auth state */}
             {isAuthenticated ? (
-              <span
-                className="text-sm font-medium truncate max-w-[120px]"
-                style={{ color: 'var(--color-foreground)' }}
-                title={(user?.user_metadata?.name as string | undefined) ?? user?.email ?? ''}
-              >
-                {(user?.user_metadata?.name as string | undefined) ?? user?.email}
-              </span>
+              <div className="flex items-center gap-1 min-w-0">
+                <Link
+                  href={`/u/${user?.id}`}
+                  className="text-sm font-medium truncate max-w-[100px] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                  style={{ color: 'var(--color-foreground)' }}
+                  title={(user?.user_metadata?.name as string | undefined) ?? user?.email ?? ''}
+                >
+                  {(user?.user_metadata?.name as string | undefined) ?? user?.email}
+                </Link>
+                <Link
+                  href="/settings/profile"
+                  aria-label="Edit profile"
+                  className="p-1 rounded-full hover:bg-background-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+                  style={{ color: 'var(--color-muted-foreground)' }}
+                >
+                  <UserCog className="w-4 h-4" aria-hidden="true" />
+                </Link>
+              </div>
             ) : (
               <Link
                 href="/user/sign-in"
@@ -126,20 +137,20 @@ export default function UserPortalPage() {
               backgroundColor: 'var(--color-primary-subtle)',
               borderColor: 'var(--color-primary)',
             }}
-            aria-label="Browse the community hub for discussions and top-rated products"
+            aria-label="Open Repair Hub — share tips, ask questions, follow fixers"
           >
             <div className="flex items-center gap-3">
-              <Users
+              <Wrench
                 className="w-5 h-5 shrink-0"
                 style={{ color: 'var(--color-primary)' }}
                 aria-hidden="true"
               />
               <div>
                 <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
-                  Community
+                  Repair Hub
                 </p>
                 <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
-                  Browse discussions and top-rated manuals
+                  Share tips, ask questions, and follow fixers
                 </p>
               </div>
             </div>
