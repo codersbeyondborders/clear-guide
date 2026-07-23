@@ -36,6 +36,7 @@ export const CreateManualSchema = z.object({
   serialNumber:    z.string().max(100).optional().nullable(),
   languages:       z.array(langCode).min(1).max(50).default(['en']),
   status:          z.enum(['draft', 'processing', 'published', 'archived']).default('processing'),
+  isPublic:        z.boolean().default(true),
   uploadMethod:    z.enum(['upload', 'sections']).optional(),
   originalFileUrl: z.string().max(2000).optional().nullable(),
   rawFileText:     z.string().max(500_000).optional().nullable(),
@@ -54,6 +55,7 @@ export const UpdateManualSchema = z.object({
   serialNumber: z.string().max(100).optional().nullable(),
   languages:    z.array(langCode).min(1).max(50).optional(),
   status:       z.enum(['draft', 'processing', 'published', 'archived']).optional(),
+  isPublic:     z.boolean().optional(),
   sections:     z.array(ManualSectionSchema).max(100).optional(),
 })
 

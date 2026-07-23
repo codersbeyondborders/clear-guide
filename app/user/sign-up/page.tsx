@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/auth'
-import { AuthForm } from '@/components/auth-form'
+import { EndUserSignUpForm } from '@/components/EndUserSignUpForm'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -19,8 +19,8 @@ export default async function UserSignUpPage({
   const { returnTo } = await searchParams
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
+    <main className="min-h-screen flex items-center justify-center bg-background px-4 py-10">
+      <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <a
             href="/"
@@ -30,15 +30,11 @@ export default async function UserSignUpPage({
           </a>
           <h1 className="text-2xl font-bold text-foreground">Create a free account</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Join the community, write reviews, and chat with AI support.
+            Join the Repair Hub, write reviews, and chat with AI support.
           </p>
         </div>
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <AuthForm
-            mode="sign-up"
-            redirectTo={returnTo ?? '/user'}
-            userType="end_user"
-          />
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <EndUserSignUpForm redirectTo={returnTo ?? '/user'} />
         </div>
         <p className="text-center text-xs text-muted-foreground mt-6">
           Are you a manufacturer?{' '}

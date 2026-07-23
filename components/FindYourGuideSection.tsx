@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { QrCode, SlidersHorizontal } from 'lucide-react'
+import { QrCode, SlidersHorizontal, LogIn, UserPlus, Camera, Users } from 'lucide-react'
 import { QRCodeDisplay } from '@/components/QRCodeDisplay'
 import { ManualSearchForm } from '@/components/ManualSearchForm'
 
@@ -44,6 +44,29 @@ export function FindYourGuideSection() {
           <p className="text-sm leading-relaxed" style={{ color: 'rgba(241,245,249,0.55)' }}>
             Scan the QR code on your product or enter its details manually — your accessible guide
             opens instantly, no app required.
+          </p>
+
+          {/* End-user account options */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-7">
+            <Link
+              href="/user/sign-in"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              style={{ backgroundColor: '#09bc7c', color: '#04140e', boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset' }}
+            >
+              <LogIn className="w-4 h-4" aria-hidden="true" />
+              Sign in
+            </Link>
+            <Link
+              href="/user/sign-up"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold border transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              style={{ borderColor: 'rgba(255,255,255,0.18)', color: '#f1f5f9' }}
+            >
+              <UserPlus className="w-4 h-4" aria-hidden="true" />
+              Create free account
+            </Link>
+          </div>
+          <p className="text-xs mt-3" style={{ color: 'rgba(241,245,249,0.4)' }}>
+            An account unlocks AI chat, community forums &amp; saved guides — or continue as a guest below.
           </p>
         </div>
 
@@ -155,22 +178,30 @@ export function FindYourGuideSection() {
             className="flex flex-wrap items-center justify-between gap-3 px-8 py-4 border-t"
             style={{ borderColor: 'rgba(255,255,255,0.07)' }}
           >
-            <p className="text-xs" style={{ color: 'rgba(241,245,249,0.35)' }}>
-              Are you a manufacturer?{' '}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               <Link
-                href="/manufacturer/login"
-                className="font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                href="/find"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                 style={{ color: '#09bc7c' }}
               >
-                Go to dashboard &rarr;
+                <Camera className="w-3.5 h-3.5" aria-hidden="true" />
+                Search by photo
               </Link>
-            </p>
+              <Link
+                href="/community"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                style={{ color: 'rgba(241,245,249,0.55)' }}
+              >
+                <Users className="w-3.5 h-3.5" aria-hidden="true" />
+                Products Forum
+              </Link>
+            </div>
             <Link
-              href="/user"
+              href="/find"
               className="text-xs font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
               style={{ color: 'rgba(241,245,249,0.45)' }}
             >
-              Open full product finder
+              Open full product finder &rarr;
             </Link>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { BookOpen, Menu, X } from 'lucide-react'
+import { BookOpen, Menu, X, UserRound } from 'lucide-react'
 
 const NAV_LINKS = [
   { label: 'Home',        href: '/'              },
@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { label: 'Get Started', href: '#how-it-works'  },
   { label: 'Features',    href: '#features'      },
   { label: 'Pricing',     href: '#pricing'       },
-  { label: 'Community',   href: '/community'     },
+  { label: 'Repair Hub',     href: '/community'  },
   { label: 'FAQ',         href: '#faq'           },
   { label: 'Contact',     href: '#contact'       },
 ]
@@ -73,12 +73,20 @@ export function NavBar() {
         </div>
 
         {/* Desktop right actions */}
-        <div className="hidden lg:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-1.5">
+          <Link
+            href="/user/sign-in"
+            className="btn-ghost text-sm text-slate-600 inline-flex items-center gap-1.5"
+          >
+            <UserRound className="w-4 h-4" aria-hidden="true" />
+            User sign in
+          </Link>
+          <span className="w-px h-5 bg-slate-200 mx-1" aria-hidden="true" />
           <Link
             href="/sign-in"
-            className="btn-ghost text-sm text-slate-600"
+            className="btn-ghost text-sm text-slate-500"
           >
-            Log in
+            Manufacturer login
           </Link>
           <Link href="/sign-up" className="btn-primary text-sm">
             Get started free
@@ -118,11 +126,19 @@ export function NavBar() {
           ))}
           <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2">
             <Link
+              href="/user/sign-in"
+              onClick={closeMobile}
+              className="btn-outline text-sm text-center inline-flex items-center justify-center gap-1.5"
+            >
+              <UserRound className="w-4 h-4" aria-hidden="true" />
+              User sign in
+            </Link>
+            <Link
               href="/sign-in"
               onClick={closeMobile}
-              className="btn-outline text-sm text-center"
+              className="btn-ghost text-sm text-center text-slate-500"
             >
-              Log in
+              Manufacturer login
             </Link>
             <Link
               href="/sign-up"

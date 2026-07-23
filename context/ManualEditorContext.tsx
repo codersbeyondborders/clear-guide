@@ -25,6 +25,8 @@ export interface EditorFormData {
   uploadedFilePathname: string | null
   sections: Section[]
   status: 'draft' | 'published'
+  /** Whether a published manual is listed publicly in the Products Forum. */
+  isPublic: boolean
 }
 
 interface EditorContextValue {
@@ -51,6 +53,7 @@ const DEFAULT_FORM: EditorFormData = {
   uploadedFilePathname: null,
   sections: [],
   status: 'draft',
+  isPublic: true,
 }
 
 const LS_KEY = 'clearguide_editor_draft'

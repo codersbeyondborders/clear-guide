@@ -4,12 +4,13 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useEditor } from '@/context/ManualEditorContext'
 import { AIProcessingOverlay } from '@/components/AIProcessingOverlay'
-import { FileText, Globe, Upload, LayoutList } from 'lucide-react'
+import { FileText, Globe, Upload, LayoutList, Eye, Lock } from 'lucide-react'
 
 export function Step4({ isEdit = false }: { isEdit?: boolean }) {
   const { formData, manualId, setStep } = useEditor()
   const router = useRouter()
   const [status, setStatus] = useState<'draft' | 'published'>(formData.status)
+  const [isPublic, setIsPublic] = useState<boolean>(formData.isPublic)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
 
@@ -24,6 +25,7 @@ export function Step4({ isEdit = false }: { isEdit?: boolean }) {
         serialNumber: formData.serialNumber || null,
         languages: formData.languages,
         status,
+        isPublic,
         uploadMethod: formData.uploadMethod,
         originalFileUrl: formData.uploadedFilePathname ?? null,
         sections: formData.sections,
@@ -141,6 +143,66 @@ export function Step4({ isEdit = false }: { isEdit?: boolean }) {
             <option value="published">Published — live for end users</option>
           </select>
         </div>
+
+        {/* Visibility (public/private) */}
+        <fieldset className="mt-6 space-y-3">
+          <legend className="text-sm font-medium mb-1" style={{ color: 'var(--color-foreground)' }}>
+            Product listing visibility
+          </legend>
+          <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
+            Controls whether this product appears in the public Products Forum. Your QR code and
+            direct link keep working either way.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3 max-w-xl">
+            {([
+              {
+                value: true,
+                Icon: Eye,
+                title: 'Public',
+                desc: 'Listed in the Products Forum so anyone can find it, browse the guide, and see reviews.',
+              },
+              {
+                value: false,
+                Icon: Lock,
+                title: 'Private',
+                desc: 'Hidden from the Products Forum. Only people with the QR code or direct link can open it.',
+              },
+            ] as const).map(({ value, Icon, title, desc }) => {
+              const selected = isPublic === value
+              return (
+                <label
+                  key={title}
+                  className="flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring"
+                  style={{
+                    borderColor: selected ? 'var(--color-primary)' : 'var(--color-border)',
+                    backgroundColor: selected ? 'var(--color-primary-subtle)' : 'var(--color-card)',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="visibility"
+                    className="sr-only"
+                    checked={selected}
+                    onChange={() => setIsPublic(value)}
+                  />
+                  <Icon
+                    className="w-5 h-5 shrink-0 mt-0.5"
+                    style={{ color: selected ? 'var(--color-primary)' : 'var(--color-muted-foreground)' }}
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                      {title}
+                    </span>
+                    <span className="block text-xs mt-0.5 leading-relaxed text-pretty" style={{ color: 'var(--color-muted-foreground)' }}>
+                      {desc}
+                    </span>
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+        </fieldset>
 
         {/* Error */}
         {error && (
