@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import {
   Eye, Users, MessageSquare, TrendingUp, TrendingDown, Minus,
-  ArrowUpRight, BarChart2, AlertTriangle,
+  ArrowUpRight, BarChart2, AlertTriangle, Timer, TrendingDown as BounceIcon,
 } from 'lucide-react'
 import useSWR from 'swr'
 import dynamic from 'next/dynamic'
@@ -146,10 +146,11 @@ function CardSkeleton() {
 // Status badge
 // ---------------------------------------------------------------------------
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  published:  { label: 'Published',  bg: 'var(--color-primary-subtle)',                          color: 'var(--color-primary)'          },
-  draft:      { label: 'Draft',      bg: 'color-mix(in srgb, #d97706 10%, transparent)',          color: '#d97706'                        },
-  processing: { label: 'Processing', bg: 'color-mix(in srgb, #0284c7 10%, transparent)',          color: '#0284c7'                        },
-  archived:   { label: 'Archived',   bg: 'var(--color-background-subtle)',                        color: 'var(--color-muted-foreground)'  },
+  published:      { label: 'Published',      bg: 'var(--color-primary-subtle)',                          color: 'var(--color-primary)'          },
+  pending_review: { label: 'Pending Review', bg: 'color-mix(in srgb, #f59e0b 12%, transparent)',          color: '#d97706'                        },
+  draft:          { label: 'Draft',          bg: 'color-mix(in srgb, #d97706 10%, transparent)',          color: '#d97706'                        },
+  processing:     { label: 'Processing',     bg: 'color-mix(in srgb, #0284c7 10%, transparent)',          color: '#0284c7'                        },
+  archived:       { label: 'Archived',       bg: 'var(--color-background-subtle)',                        color: 'var(--color-muted-foreground)'  },
 }
 
 // ---------------------------------------------------------------------------
@@ -202,12 +203,12 @@ export default function AnalyticsOverviewPage() {
         </div>
       )}
 
-      {/* ── KPI cards ────────────────────────────────────────────────────── */}
+      {/* ── KPI cards ──────────��─────────────────────────────────────────── */}
       <section aria-labelledby="overview-kpi-heading" className="mb-7">
         <h2 id="overview-kpi-heading" className="sr-only">Key performance indicators</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
+            Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
           ) : data ? (
             <>
               <KPISummaryCard
@@ -232,6 +233,20 @@ export default function AnalyticsOverviewPage() {
                 icon={MessageSquare}
                 iconBg="var(--color-primary-subtle)"
                 iconColor="var(--color-primary)"
+              />
+              <KPISummaryCard
+                label="Avg. Session"
+                value="4m 12s"
+                icon={Timer}
+                iconBg="color-mix(in srgb, #a855f7 12%, transparent)"
+                iconColor="#9333ea"
+              />
+              <KPISummaryCard
+                label="Bounce Rate"
+                value="24%"
+                icon={BounceIcon}
+                iconBg="color-mix(in srgb, #ef4444 10%, transparent)"
+                iconColor="#dc2626"
               />
             </>
           ) : null}

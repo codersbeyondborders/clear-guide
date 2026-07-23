@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, BarChart2, Settings, LogOut, X } from 'lucide-react'
+import { LayoutDashboard, BarChart2, Settings, LogOut, X, Users } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
 // ---------------------------------------------------------------------------
@@ -41,6 +41,7 @@ function ClearGuideLogo() {
 const NAV_ITEMS = [
   { label: 'Dashboard',  href: '/manufacturer/dashboard',  icon: LayoutDashboard },
   { label: 'Analytics',  href: '/manufacturer/analytics',  icon: BarChart2       },
+  { label: 'Team',       href: '/manufacturer/settings?tab=team', icon: Users    },
   { label: 'Settings',   href: '/manufacturer/settings',   icon: Settings        },
 ] as const
 

@@ -29,10 +29,11 @@ function formatCount(n: number): string {
 }
 
 const STATUS_CONFIG = {
-  published: { label: 'Published', bg: 'var(--color-primary-subtle)', color: 'var(--color-primary)' },
-  draft:     { label: 'Draft',     bg: 'color-mix(in srgb, #d97706 10%, transparent)', color: '#d97706' },
-  processing:{ label: 'Processing',bg: 'color-mix(in srgb, #0284c7 10%, transparent)', color: '#0284c7' },
-  archived:  { label: 'Archived',  bg: 'var(--color-background-subtle)', color: 'var(--color-muted-foreground)' },
+  published:      { label: 'Published',      bg: 'var(--color-primary-subtle)',                              color: 'var(--color-primary)'            },
+  pending_review: { label: 'Pending Review', bg: 'color-mix(in srgb, #f59e0b 12%, transparent)',             color: '#d97706'                         },
+  draft:          { label: 'Draft',          bg: 'color-mix(in srgb, #d97706 10%, transparent)',             color: '#d97706'                         },
+  processing:     { label: 'Processing',     bg: 'color-mix(in srgb, #0284c7 10%, transparent)',             color: '#0284c7'                         },
+  archived:       { label: 'Archived',       bg: 'var(--color-background-subtle)',                           color: 'var(--color-muted-foreground)'   },
 }
 
 const LANGUAGE_LABELS: Record<string, string> = {

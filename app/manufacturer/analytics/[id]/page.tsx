@@ -1,10 +1,363 @@
 'use client'
 
 import { use, useState } from 'react'
-import { ArrowLeft, Eye, Users, Clock, Download } from 'lucide-react'
+import { ArrowLeft, Eye, Users, Clock, Download, Globe, Smartphone, Monitor, Tablet, MousePointer, MessageSquare, TrendingDown } from 'lucide-react'
 import useSWR from 'swr'
 import dynamic from 'next/dynamic'
 import { KPICard } from '@/components/KPICard'
+
+// ---------------------------------------------------------------------------
+// Enriched analytics mock data
+// ---------------------------------------------------------------------------
+const MOCK_DETAILED = {
+  topCountries: [
+    { country: 'United States', flag: '🇺🇸', views: 4820, percentage: 38 },
+    { country: 'United Kingdom', flag: '🇬🇧', views: 2140, percentage: 17 },
+    { country: 'Germany', flag: '🇩🇪', views: 1560, percentage: 12 },
+    { country: 'India', flag: '🇮🇳', views: 1320, percentage: 10 },
+    { country: 'Canada', flag: '🇨🇦', views: 890, percentage: 7 },
+  ],
+  deviceStats: { mobile: 58, desktop: 34, tablet: 8 },
+  topLanguages: [
+    { language: 'English', views: 6200, percentage: 49 },
+    { language: 'German', views: 2100, percentage: 17 },
+    { language: 'Spanish', views: 1700, percentage: 13 },
+    { language: 'French', views: 1200, percentage: 10 },
+    { language: 'Hindi', views: 800, percentage: 6 },
+  ],
+  sectionEngagement: [
+    { sectionNumber: 1, title: 'Getting Started', views: 5820, avgTimeSeconds: 142, dropoffRate: 8 },
+    { sectionNumber: 2, title: 'Safety Warnings', views: 4210, avgTimeSeconds: 89, dropoffRate: 18 },
+    { sectionNumber: 3, title: 'Installation Guide', views: 3480, avgTimeSeconds: 312, dropoffRate: 22 },
+    { sectionNumber: 4, title: 'Operating Instructions', views: 2760, avgTimeSeconds: 270, dropoffRate: 35 },
+    { sectionNumber: 5, title: 'Troubleshooting', views: 2120, avgTimeSeconds: 198, dropoffRate: 48 },
+    { sectionNumber: 6, title: 'Maintenance', views: 1340, avgTimeSeconds: 110, dropoffRate: 63 },
+    { sectionNumber: 7, title: 'Warranty & Support', views: 880, avgTimeSeconds: 60, dropoffRate: 72 },
+  ],
+  engagementFunnel: {
+    sessions: 12640,
+    scrolled50: 8920,
+    usedAiChat: 3180,
+    downloaded: 1460,
+  },
+  bounceRate: 24,
+  returningUserRate: 31,
+  viewsByMode: { web: 7200, ar: 1840, qr: 2200, direct: 1400 },
+}
+
+function formatSecondsShort(s: number): string {
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  return `${m}m ${String(s % 60).padStart(2, '0')}s`
+}
+
+// ---------------------------------------------------------------------------
+// User Behaviour section
+// ---------------------------------------------------------------------------
+function UserBehaviourSection() {
+  const { engagementFunnel, bounceRate, returningUserRate, viewsByMode } = MOCK_DETAILED
+
+  const funnelSteps = [
+    { label: 'Sessions', value: engagementFunnel.sessions, icon: Eye },
+    { label: 'Scrolled 50%+', value: engagementFunnel.scrolled50, icon: MousePointer },
+    { label: 'Used AI Chat', value: engagementFunnel.usedAiChat, icon: MessageSquare },
+    { label: 'Downloaded', value: engagementFunnel.downloaded, icon: Download },
+  ]
+
+  const totalViews = Object.values(viewsByMode).reduce((a, b) => a + b, 0)
+  const modeLabels: Record<string, string> = { web: 'Web Viewer', ar: 'AR Overlay', qr: 'QR Scan', direct: 'Direct Link' }
+
+  return (
+    <section aria-labelledby="user-behaviour-heading" className="space-y-4">
+      <h2 id="user-behaviour-heading" className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>
+        User Behaviour
+      </h2>
+      <div className="grid sm:grid-cols-2 gap-4">
+        {/* Engagement funnel */}
+        <div
+          className="rounded-2xl border p-5 space-y-4"
+          style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+        >
+          <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>Engagement Funnel</p>
+          <div className="space-y-3">
+            {funnelSteps.map((step, i) => {
+              const pct = Math.round((step.value / funnelSteps[0].value) * 100)
+              const Icon = step.icon
+              return (
+                <div key={step.label} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <Icon className="w-3.5 h-3.5" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true" />
+                      <span style={{ color: 'var(--color-foreground)' }}>{step.label}</span>
+                    </div>
+                    <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                      {step.value.toLocaleString()} <span style={{ color: 'var(--color-muted-foreground)' }}>({pct}%)</span>
+                    </span>
+                  </div>
+                  <div
+                    className="h-2 rounded-full overflow-hidden"
+                    style={{ backgroundColor: 'var(--color-background-subtle)' }}
+                    aria-hidden="true"
+                  >
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${pct}%`,
+                        backgroundColor: i === 0 ? 'var(--color-primary)' : `color-mix(in srgb, var(--color-primary) ${100 - i * 18}%, transparent)`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <div className="flex gap-4 pt-2 border-t" style={{ borderColor: 'var(--color-border)' }}>
+            <div>
+              <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Bounce Rate</p>
+              <p className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>{bounceRate}%</p>
+            </div>
+            <div>
+              <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Returning Users</p>
+              <p className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>{returningUserRate}%</p>
+            </div>
+          </div>
+        </div>
+
+        {/* View mode breakdown */}
+        <div
+          className="rounded-2xl border p-5 space-y-4"
+          style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+        >
+          <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>Access Mode Breakdown</p>
+          <div className="space-y-3">
+            {(Object.entries(viewsByMode) as [string, number][]).map(([mode, count]) => {
+              const pct = Math.round((count / totalViews) * 100)
+              return (
+                <div key={mode} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="capitalize font-medium" style={{ color: 'var(--color-foreground)' }}>{modeLabels[mode]}</span>
+                    <span style={{ color: 'var(--color-muted-foreground)' }}>{count.toLocaleString()} ({pct}%)</span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background-subtle)' }} aria-hidden="true">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--color-primary)' }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Demographics section
+// ---------------------------------------------------------------------------
+function DemographicsSection() {
+  const { topCountries, deviceStats, topLanguages } = MOCK_DETAILED
+  const deviceTotal = deviceStats.mobile + deviceStats.desktop + deviceStats.tablet
+
+  return (
+    <section aria-labelledby="demographics-heading" className="space-y-4">
+      <h2 id="demographics-heading" className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>
+        Demographics
+      </h2>
+      <div className="grid sm:grid-cols-3 gap-4">
+        {/* Top countries */}
+        <div
+          className="rounded-2xl border p-5 space-y-3 sm:col-span-1"
+          style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+        >
+          <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>Top Countries</p>
+          <div className="space-y-2.5" role="list" aria-label="Top countries by views">
+            {topCountries.map((c) => (
+              <div key={c.country} role="listitem" className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5" style={{ color: 'var(--color-foreground)' }}>
+                    <span aria-hidden="true">{c.flag}</span>
+                    {c.country}
+                  </span>
+                  <span style={{ color: 'var(--color-muted-foreground)' }}>{c.views.toLocaleString()}</span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background-subtle)' }} aria-hidden="true">
+                  <div className="h-full rounded-full" style={{ width: `${c.percentage}%`, backgroundColor: 'var(--color-primary)' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Device split */}
+        <div
+          className="rounded-2xl border p-5 space-y-3"
+          style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+        >
+          <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>Devices</p>
+          <div className="space-y-3">
+            {([
+              { label: 'Mobile',  pct: deviceStats.mobile,  icon: Smartphone, color: 'var(--color-primary)' },
+              { label: 'Desktop', pct: deviceStats.desktop, icon: Monitor,    color: '#0284c7' },
+              { label: 'Tablet',  pct: deviceStats.tablet,  icon: Tablet,     color: '#d97706' },
+            ] as { label: string; pct: number; icon: typeof Smartphone; color: string }[]).map(({ label, pct, icon: Icon, color }) => (
+              <div key={label} className="flex items-center gap-3">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)` }}
+                  aria-hidden="true"
+                >
+                  <Icon className="w-4 h-4" style={{ color }} aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span style={{ color: 'var(--color-foreground)' }}>{label}</span>
+                    <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>{pct}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background-subtle)' }} aria-hidden="true">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+            {deviceTotal.toLocaleString()} total sessions
+          </p>
+        </div>
+
+        {/* Top languages */}
+        <div
+          className="rounded-2xl border p-5 space-y-3"
+          style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+        >
+          <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>Languages</p>
+          <div className="space-y-2.5" role="list" aria-label="Top languages by views">
+            {topLanguages.map((l) => (
+              <div key={l.language} role="listitem" className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <Globe className="w-3 h-3 shrink-0" style={{ color: 'var(--color-muted-foreground)' }} aria-hidden="true" />
+                    <span style={{ color: 'var(--color-foreground)' }}>{l.language}</span>
+                  </span>
+                  <span style={{ color: 'var(--color-muted-foreground)' }}>{l.percentage}%</span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background-subtle)' }} aria-hidden="true">
+                  <div className="h-full rounded-full" style={{ width: `${l.percentage}%`, backgroundColor: 'var(--color-primary)' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Section Engagement table
+// ---------------------------------------------------------------------------
+function SectionEngagementSection() {
+  const { sectionEngagement } = MOCK_DETAILED
+
+  function dropoffColor(rate: number): string {
+    if (rate < 20) return '#16a34a'
+    if (rate < 50) return '#d97706'
+    return 'var(--color-destructive)'
+  }
+
+  function dropoffBg(rate: number): string {
+    if (rate < 20) return 'color-mix(in srgb, #16a34a 12%, transparent)'
+    if (rate < 50) return 'color-mix(in srgb, #d97706 12%, transparent)'
+    return 'color-mix(in srgb, var(--color-destructive) 12%, transparent)'
+  }
+
+  return (
+    <section aria-labelledby="section-engagement-heading">
+      <div
+        className="rounded-2xl border overflow-hidden"
+        style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+      >
+        <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--color-border)' }}>
+          <div>
+            <h2 id="section-engagement-heading" className="text-base font-bold" style={{ color: 'var(--color-foreground)' }}>
+              Section Engagement
+            </h2>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted-foreground)' }}>
+              Per-section views, time spent, and reader drop-off rates
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-[10px] font-semibold">
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#16a34a' }} aria-hidden="true" />
+              <span style={{ color: 'var(--color-muted-foreground)' }}>Low (&lt;20%)</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#d97706' }} aria-hidden="true" />
+              <span style={{ color: 'var(--color-muted-foreground)' }}>Med (20–50%)</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-destructive)' }} aria-hidden="true" />
+              <span style={{ color: 'var(--color-muted-foreground)' }}>High (&gt;50%)</span>
+            </span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" aria-label="Section engagement breakdown">
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                {['#', 'Section', 'Views', 'Avg Time', 'Drop-off'].map((h) => (
+                  <th
+                    key={h}
+                    className={`px-6 py-3 text-xs font-semibold uppercase tracking-wide ${h === '#' ? 'text-center' : 'text-left'}`}
+                    style={{ color: 'var(--color-muted-foreground)' }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sectionEngagement.map((s, i) => (
+                <tr
+                  key={s.sectionNumber}
+                  style={{ borderBottom: i < sectionEngagement.length - 1 ? '1px solid var(--color-border)' : 'none' }}
+                >
+                  <td className="px-6 py-3 text-center">
+                    <span
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                      style={{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}
+                      aria-hidden="true"
+                    >
+                      {s.sectionNumber}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3 font-medium" style={{ color: 'var(--color-foreground)' }}>
+                    {s.title}
+                  </td>
+                  <td className="px-6 py-3 font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                    {s.views.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-3" style={{ color: 'var(--color-muted-foreground)' }}>
+                    {formatSecondsShort(s.avgTimeSeconds)}
+                  </td>
+                  <td className="px-6 py-3">
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+                      style={{ backgroundColor: dropoffBg(s.dropoffRate), color: dropoffColor(s.dropoffRate) }}
+                    >
+                      <TrendingDown className="w-3 h-3" aria-hidden="true" />
+                      {s.dropoffRate}%
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 type Period = '7d' | '30d' | '90d'
 const PERIODS: { key: Period; label: string }[] = [
@@ -367,6 +720,14 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
             </div>
           </section>
         )}
+        {/* ── User Behaviour ───────────────────────────────────────── */}
+        <UserBehaviourSection />
+
+        {/* ── Demographics ─────────────────────────────────────────── */}
+        <DemographicsSection />
+
+        {/* ── Section Engagement ───────────────────────────────────── */}
+        <SectionEngagementSection />
       </main>
     </div>
   )
