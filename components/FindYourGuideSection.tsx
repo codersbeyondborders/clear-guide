@@ -193,7 +193,7 @@ export function FindYourGuideSection() {
                 style={{ color: 'rgba(241,245,249,0.55)' }}
               >
                 <Users className="w-3.5 h-3.5" aria-hidden="true" />
-                Community forums
+                Products Forum
               </Link>
             </div>
             <Link

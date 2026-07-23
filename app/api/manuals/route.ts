@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     const baseSQL = `
       SELECT
         m.id, m.product_name AS "productName", m.product_model AS "productModel",
-        m.brand, m.status, m.languages, m.cover_image AS "coverImage",
+        m.brand, m.status, m.is_public AS "isPublic", m.languages, m.cover_image AS "coverImage",
         m.created_at AS "createdAt", m.updated_at AS "updatedAt",
         COUNT(DISTINCT s.id)::int                      AS "sectionCount",
         COUNT(DISTINCT a.id)::int                      AS "viewCount",
@@ -82,6 +82,7 @@ export async function POST(request: Request) {
       brand,
       serialNumber,
       languages,
+      isPublic,
       uploadMethod,
       originalFileUrl,
       rawFileText,
@@ -106,8 +107,8 @@ export async function POST(request: Request) {
       const manualResult = await client.query(
         `INSERT INTO manuals
            (user_id, product_name, product_model, brand, serial_number,
-            status, languages, upload_method, original_file_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            status, languages, is_public, upload_method, original_file_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING id`,
         [
           user.id,
@@ -117,6 +118,7 @@ export async function POST(request: Request) {
           serialNumber ?? null,
           'processing',
           languages,
+          isPublic ?? true,
           uploadMethod ?? null,
           originalFileUrl ?? null,
         ],

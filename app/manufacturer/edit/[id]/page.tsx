@@ -202,6 +202,7 @@ export default function EditManualPage({ params }: { params: Promise<{ id: strin
             videoUrls: s.videoUrls ?? [],
           })),
           status:             data.status ?? 'draft',
+          isPublic:           data.isPublic ?? true,
           uploadedFileName:   null,
           uploadedFileSize:   null,
         })

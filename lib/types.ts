@@ -44,6 +44,8 @@ export interface Manual {
   brand: string | null
   description: string | null
   status: ManualStatus
+  /** When true and status is 'published', the manual is listed in the public Products Forum. */
+  isPublic: boolean
   languages: string[]
   coverImage: string | null
   deletedAt: string | null
@@ -53,7 +55,7 @@ export interface Manual {
 
 /** Lightweight list item used in dashboard cards */
 export interface ManualListItem
-  extends Pick<Manual, 'id' | 'productName' | 'productModel' | 'brand' | 'status' | 'languages' | 'coverImage' | 'createdAt' | 'updatedAt'> {
+  extends Pick<Manual, 'id' | 'productName' | 'productModel' | 'brand' | 'status' | 'isPublic' | 'languages' | 'coverImage' | 'createdAt' | 'updatedAt'> {
   sectionCount: number
   /** Total view events from the analytics table */
   viewCount: number
@@ -176,6 +178,25 @@ export interface AiChatMessage {
 // Community — user roles
 // ---------------------------------------------------------------------------
 export type UserType = 'manufacturer' | 'end_user'
+
+// ---------------------------------------------------------------------------
+// Community — public product listing (Products Forum)
+// ---------------------------------------------------------------------------
+export interface PublicProduct {
+  id: string
+  productName: string
+  productModel: string | null
+  brand: string | null
+  description: string | null
+  coverImage: string | null
+  languages: string[]
+  createdAt: string
+  updatedAt: string
+  /** Aggregate community stats */
+  avgRating: number
+  reviewCount: number
+  threadCount: number
+}
 
 // ---------------------------------------------------------------------------
 // Community — product reviews

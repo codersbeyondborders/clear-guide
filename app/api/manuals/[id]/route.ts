@@ -20,7 +20,7 @@ export async function GET(
 
     const manualResult = await query(
       `SELECT id, product_name AS "productName", product_model AS "productModel",
-              brand, serial_number AS "serialNumber", status, languages,
+              brand, serial_number AS "serialNumber", status, is_public AS "isPublic", languages,
               cover_image AS "coverImage", created_at AS "createdAt", updated_at AS "updatedAt"
        FROM manuals
        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
@@ -70,7 +70,7 @@ export async function PUT(
       sections: parsed.data.sections,
     })
 
-    const { languages, status } = parsed.data
+    const { languages, status, isPublic } = parsed.data
     const { productName, productModel, brand, serialNumber, sections } = sanitized
 
     await withTransaction(async (client) => {
@@ -83,9 +83,10 @@ export async function PUT(
            serial_number = $4,
            languages = COALESCE($5, languages),
            status = COALESCE($6, status),
+           is_public = COALESCE($7, is_public),
            updated_at = NOW()
-         WHERE id = $7 AND user_id = $8 AND deleted_at IS NULL`,
-        [productName, productModel, brand, serialNumber ?? null, languages, status, id, user.id],
+         WHERE id = $8 AND user_id = $9 AND deleted_at IS NULL`,
+        [productName, productModel, brand, serialNumber ?? null, languages, status, isPublic ?? null, id, user.id],
       )
 
       // Replace sections if provided
