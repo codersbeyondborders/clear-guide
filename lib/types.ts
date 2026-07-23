@@ -355,6 +355,80 @@ export interface HubBookmark {
 }
 
 // ---------------------------------------------------------------------------
+// Company accounts + multi-user roles
+// ---------------------------------------------------------------------------
+export type CompanyRole = 'owner' | 'admin' | 'manager' | 'creator' | 'viewer'
+export type MemberStatus = 'pending' | 'active' | 'suspended'
+
+export interface Company {
+  id: string
+  ownerUserId: string
+  name: string
+  slug: string
+  logoUrl: string | null
+  industry: string | null
+  website: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CompanyMember {
+  companyId: string
+  userId: string
+  role: CompanyRole
+  status: MemberStatus
+  invitedBy: string | null
+  invitedAt: string
+  acceptedAt: string | null
+  /** Joined from "user" table */
+  name?: string
+  email?: string
+  image?: string | null
+}
+
+export interface CompanyInvitation {
+  id: string
+  companyId: string
+  email: string
+  role: CompanyRole
+  token: string
+  invitedBy: string
+  expiresAt: string
+  acceptedAt: string | null
+}
+
+// ---------------------------------------------------------------------------
+// Output formats
+// ---------------------------------------------------------------------------
+export type OutputFormat = 'web' | 'pdf' | 'qr_page' | 'epub' | 'print_ready'
+
+// ---------------------------------------------------------------------------
+// Extended manual (with company + review fields)
+// ---------------------------------------------------------------------------
+export type ExtendedManualStatus = 'draft' | 'processing' | 'review' | 'published' | 'archived'
+
+// ---------------------------------------------------------------------------
+// Extended analytics
+// ---------------------------------------------------------------------------
+export interface ExtendedAnalytics {
+  manualName: string
+  totalViews: number
+  activeUsers: number
+  avgTimeSpent: string
+  trendViews: number
+  trendUsers: number
+  viewsOverTime: { date: string; views: number }[]
+  topAIQueries: { query: string; count: number }[]
+  deviceBreakdown: { device: string; count: number }[]
+  topSections: { title: string; views: number; avgScrollDepth: number }[]
+  retentionCurve: { step: string; pct: number }[]
+  countryBreakdown: { country: string; views: number }[]
+  ageGroupBreakdown: { group: string; count: number }[]
+  eventBreakdown: { type: string; count: number }[]
+  returningVsNew: { returning: number; new: number }
+}
+
+// ---------------------------------------------------------------------------
 // API response wrappers
 // ---------------------------------------------------------------------------
 export interface ApiSuccess<T> {
