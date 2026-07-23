@@ -19,10 +19,11 @@ type SortKey = 'newest' | 'oldest' | 'name-asc' | 'most-viewed'
 type StatusFilter = 'all' | ManualStatus
 
 const STATUS_TABS: { key: StatusFilter; label: string }[] = [
-  { key: 'all',        label: 'All'        },
-  { key: 'published',  label: 'Published'  },
-  { key: 'draft',      label: 'Draft'      },
-  { key: 'processing', label: 'Processing' },
+  { key: 'all',            label: 'All'            },
+  { key: 'published',      label: 'Published'      },
+  { key: 'pending_review', label: 'Pending Review' },
+  { key: 'draft',          label: 'Draft'          },
+  { key: 'processing',     label: 'Processing'     },
 ]
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -224,10 +225,11 @@ export default function ManufacturerDashboard() {
   // ── Tab counts ────────────────────────────────────────────────────────────
   const tabCounts = useMemo(() => {
     return {
-      all: manuals.length,
-      published: manuals.filter((m) => m.status === 'published').length,
-      draft: manuals.filter((m) => m.status === 'draft').length,
-      processing: manuals.filter((m) => m.status === 'processing').length,
+      all:            manuals.length,
+      published:      manuals.filter((m) => m.status === 'published').length,
+      pending_review: manuals.filter((m) => m.status === 'pending_review').length,
+      draft:          manuals.filter((m) => m.status === 'draft').length,
+      processing:     manuals.filter((m) => m.status === 'processing').length,
     }
   }, [manuals])
 

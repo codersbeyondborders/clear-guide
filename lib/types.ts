@@ -5,7 +5,7 @@
 // ---------------------------------------------------------------------------
 // Enums (mirror pgEnum values)
 // ---------------------------------------------------------------------------
-export type ManualStatus = 'draft' | 'processing' | 'published' | 'archived'
+export type ManualStatus = 'draft' | 'processing' | 'pending_review' | 'published' | 'archived'
 export type ChatRole = 'user' | 'assistant'
 export type ViewMode = 'web' | 'ar' | 'qr' | 'direct'
 
@@ -34,6 +34,58 @@ export interface Session {
 }
 
 // ---------------------------------------------------------------------------
+// Company & Team Management
+// ---------------------------------------------------------------------------
+export type CompanyRole = 'admin' | 'manager' | 'creator' | 'viewer'
+
+export interface TeamMember {
+  id: string
+  name: string
+  email: string
+  role: CompanyRole
+  status: 'active' | 'pending'
+  joinedAt: string
+  image: string | null
+}
+
+export interface CompanyProfile {
+  name: string
+  industry: string
+  website: string
+  description: string
+  logoUrl: string | null
+}
+
+// Role permission matrix
+export const ROLE_PERMISSIONS: Record<CompanyRole, { label: string; description: string; permissions: string[] }> = {
+  admin: {
+    label: 'Admin',
+    description: 'Full access',
+    permissions: ['Create', 'Edit', 'Delete', 'Publish', 'Manage Team', 'View Analytics'],
+  },
+  manager: {
+    label: 'Manager',
+    description: 'Create, edit & publish',
+    permissions: ['Create', 'Edit', 'Publish', 'View Analytics'],
+  },
+  creator: {
+    label: 'Creator',
+    description: 'Create & edit drafts',
+    permissions: ['Create', 'Edit'],
+  },
+  viewer: {
+    label: 'Viewer',
+    description: 'Read-only access',
+    permissions: ['View Analytics'],
+  },
+}
+
+// ---------------------------------------------------------------------------
+// Output Formats
+// ---------------------------------------------------------------------------
+export type OutputFormat = 'web' | 'pdf' | 'infographic' | 'video_script' | 'qr_code' | 'ar_overlay'
+
+// ---------------------------------------------------------------------------
 // App: manuals
 // ---------------------------------------------------------------------------
 export interface Manual {
@@ -45,6 +97,7 @@ export interface Manual {
   description: string | null
   status: ManualStatus
   languages: string[]
+  outputFormats: OutputFormat[]
   coverImage: string | null
   deletedAt: string | null
   createdAt: string
@@ -157,6 +210,45 @@ export interface ManualAnalyticsSummary {
   avgTimeSpentSeconds: number
   viewsByMode: Record<ViewMode, number>
   viewsLast30Days: number
+  bounceRate: number
+  avgSessionDurationSeconds: number
+}
+
+export interface CountryStats {
+  country: string
+  flag: string
+  views: number
+  percentage: number
+}
+
+export interface DeviceStats {
+  mobile: number
+  desktop: number
+  tablet: number
+}
+
+export interface SectionEngagement {
+  sectionNumber: number
+  title: string
+  views: number
+  avgTimeSeconds: number
+  dropoffRate: number
+}
+
+export interface EngagementFunnel {
+  sessions: number
+  scrolled50: number
+  usedAiChat: number
+  downloaded: number
+}
+
+export interface ManualDetailedAnalytics extends ManualAnalyticsSummary {
+  topCountries: CountryStats[]
+  deviceStats: DeviceStats
+  topLanguages: { language: string; views: number; percentage: number }[]
+  sectionEngagement: SectionEngagement[]
+  engagementFunnel: EngagementFunnel
+  returningUserRate: number
 }
 
 // ---------------------------------------------------------------------------

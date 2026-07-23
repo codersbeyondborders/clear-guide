@@ -1,7 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Share2, Download } from 'lucide-react'
+import { Check, Share2, Download, Globe, FileText, Image as ImageIcon, Video, QrCode, Layers } from 'lucide-react'
+import type { OutputFormat } from '@/lib/types'
+
+const FORMAT_META: Record<OutputFormat, { label: string; icon: typeof Globe }> = {
+  web:          { label: 'Web',         icon: Globe      },
+  pdf:          { label: 'PDF',         icon: FileText   },
+  infographic:  { label: 'Infographic', icon: ImageIcon  },
+  video_script: { label: 'Video Script',icon: Video      },
+  qr_code:      { label: 'QR Code',     icon: QrCode     },
+  ar_overlay:   { label: 'AR Overlay',  icon: Layers     },
+}
 
 // Static QR SVG pattern (visual stand-in for a real QR code)
 function QRPattern() {
@@ -40,10 +50,11 @@ function QRPattern() {
 
 interface ManualDoneCardProps {
   manualId: string | null
+  outputFormats?: OutputFormat[]
   onGoToDashboard: () => void
 }
 
-export function ManualDoneCard({ manualId, onGoToDashboard }: ManualDoneCardProps) {
+export function ManualDoneCard({ manualId, outputFormats = ['web'], onGoToDashboard }: ManualDoneCardProps) {
   const [shareFeedback, setShareFeedback] = useState<'idle' | 'copied' | 'shared'>('idle')
 
   const handleShare = async () => {
@@ -101,6 +112,31 @@ export function ManualDoneCard({ manualId, onGoToDashboard }: ManualDoneCardProp
           <QRPattern />
         </div>
       </div>
+
+      {/* Output format badges */}
+      {outputFormats.length > 0 && (
+        <div className="w-full space-y-2">
+          <p className="text-xs font-semibold tracking-widest uppercase text-center" style={{ color: 'var(--color-muted-foreground)' }}>
+            Available formats
+          </p>
+          <div className="flex flex-wrap justify-center gap-1.5" aria-label="Output formats">
+            {outputFormats.map((fmt) => {
+              const meta = FORMAT_META[fmt]
+              const Icon = meta.icon
+              return (
+                <span
+                  key={fmt}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                  style={{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}
+                >
+                  <Icon className="w-3 h-3" aria-hidden="true" />
+                  {meta.label}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Action buttons */}
       {shareFeedback !== 'idle' && (

@@ -2,11 +2,13 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Globe, Trash2, Plus, Upload, Video, Image as ImageIcon, Check, ChevronDown, FileText, LayoutList, X } from 'lucide-react'
+import { Globe, Trash2, Plus, Upload, Video, Image as ImageIcon, Check, ChevronDown, FileText, LayoutList, X, QrCode, Layers } from 'lucide-react'
+import type { OutputFormat } from '@/lib/types'
 import { ManualEditorProvider, useEditor } from '@/context/ManualEditorContext'
 import { SUPPORTED_LANGUAGES } from '@/components/LanguagePicker'
 import { AIProcessingOverlay } from '@/components/AIProcessingOverlay'
 import { ManualDoneCard } from '@/components/ManualDoneCard'
+import { ManualReviewCard } from '@/components/ManualReviewCard'
 import { FileUpload } from '@/components/SectionBuilder'
 
 // ---------------------------------------------------------------------------
@@ -205,10 +207,12 @@ function ManualEditor() {
   const [sections, setSections] = useState<SectionData[]>([
     { id: generateId(), title: '', content: '' },
   ])
+  const [outputFormats, setOutputFormats] = useState<OutputFormat[]>(['web'])
   const [uploadMethod, setUploadMethod] = useState<'sections' | 'upload' | null>(null)
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
   const [uploadedFilePathname, setUploadedFilePathname] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
+  const [reviewing, setReviewing] = useState(false)
   const [done, setDone] = useState(false)
   const [savedManualId, setSavedManualId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -253,6 +257,7 @@ function ManualEditor() {
         brand: formData.brand || null,
         serialNumber: formData.serialNumber || null,
         languages: selectedLangs,
+        outputFormats,
         status,
         uploadMethod,
         originalFileUrl: uploadMethod === 'upload' ? uploadedFilePathname : null,
@@ -286,14 +291,56 @@ function ManualEditor() {
 
   const onOverlayComplete = useCallback(() => {
     setProcessing(false)
-    setDone(true)
-  }, [])
+    // If published status, go through review first; drafts go straight to done
+    if (status === 'published') {
+      setReviewing(true)
+    } else {
+      setDone(true)
+    }
+  }, [status])
+
+  // Show review card (pre-publish)
+  if (reviewing && !done) {
+    const reviewSections = sections.map((s) => ({
+      id: s.id,
+      title: s.title || 'Untitled Section',
+      contentSnippet: s.content.slice(0, 200) + (s.content.length > 200 ? '…' : ''),
+    }))
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--color-background-subtle)' }}>
+        <ManualReviewCard
+          manualId={savedManualId}
+          productName={formData.productName ?? 'Product Manual'}
+          productModel={formData.productModel ?? null}
+          brand={formData.brand ?? null}
+          sections={reviewSections}
+          outputFormats={outputFormats}
+          onRequestChanges={() => { setReviewing(false) }}
+          onApproveAndPublish={async () => {
+            if (savedManualId) {
+              await fetch(`/api/manuals/${savedManualId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'published' }),
+              }).catch(() => null)
+            }
+            setReviewing(false)
+            setDone(true)
+          }}
+        />
+      </div>
+    )
+  }
 
   // Show done card
   if (done) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--color-background-subtle)' }}>
-        <ManualDoneCard manualId={savedManualId} onGoToDashboard={() => router.push('/manufacturer/dashboard')} />
+        <ManualDoneCard
+          manualId={savedManualId}
+          outputFormats={outputFormats}
+          onGoToDashboard={() => router.push('/manufacturer/dashboard')}
+        />
       </div>
     )
   }
@@ -501,6 +548,93 @@ function ManualEditor() {
                       <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
                     </span>
                   )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── Output Formats ────────────────────────────────────────── */}
+        <div
+          className="rounded-2xl border p-6"
+          style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-base font-bold" style={{ color: 'var(--color-foreground)' }}>
+              Output Formats
+            </h2>
+            <span
+              className="text-xs font-semibold px-2.5 py-1 rounded-full"
+              style={{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}
+            >
+              {outputFormats.length} selected
+            </span>
+          </div>
+          <p className="text-xs mb-5" style={{ color: 'var(--color-muted-foreground)' }}>
+            Choose how your manual will be delivered to end users. Web is always included.
+          </p>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3" role="group" aria-label="Output format selection">
+            {([
+              { key: 'web' as OutputFormat,          label: 'Web Page',      desc: 'Interactive web viewer', icon: Globe,     locked: true  },
+              { key: 'pdf' as OutputFormat,          label: 'PDF Export',    desc: 'Downloadable PDF file',  icon: FileText,  locked: false },
+              { key: 'infographic' as OutputFormat,  label: 'Infographic',   desc: 'Visual one-page summary',icon: ImageIcon, locked: false },
+              { key: 'video_script' as OutputFormat, label: 'Video Script',  desc: 'Narrated video guide',   icon: Video,     locked: false },
+              { key: 'qr_code' as OutputFormat,      label: 'QR Code',       desc: 'Scannable link access',  icon: QrCode,    locked: false },
+              { key: 'ar_overlay' as OutputFormat,   label: 'AR Overlay',    desc: 'Augmented reality view', icon: Layers,    locked: false },
+            ] as { key: OutputFormat; label: string; desc: string; icon: typeof Globe; locked: boolean }[]).map(({ key, label, desc, icon: Icon, locked }) => {
+              const isSelected = outputFormats.includes(key)
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={isSelected}
+                  disabled={locked}
+                  onClick={() => {
+                    if (locked) return
+                    setOutputFormats(prev =>
+                      prev.includes(key) ? prev.filter(f => f !== key) : [...prev, key]
+                    )
+                  }}
+                  className="relative flex flex-col gap-2.5 p-4 rounded-xl border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  style={{
+                    borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
+                    backgroundColor: isSelected ? 'var(--color-primary-subtle)' : 'var(--color-background-subtle)',
+                    cursor: locked ? 'default' : 'pointer',
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{
+                        backgroundColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
+                      }}
+                      aria-hidden="true"
+                    >
+                      <Icon className="w-4 h-4" style={{ color: isSelected ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)' }} aria-hidden="true" />
+                    </div>
+                    {locked && (
+                      <span
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}
+                      >
+                        Always on
+                      </span>
+                    )}
+                    {!locked && isSelected && (
+                      <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: 'var(--color-primary)' }}
+                        aria-hidden="true"
+                      >
+                        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>{label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted-foreground)' }}>{desc}</p>
+                  </div>
                 </button>
               )
             })}
