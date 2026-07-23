@@ -248,6 +248,113 @@ export interface ForumReply {
 }
 
 // ---------------------------------------------------------------------------
+// Repair Hub — media attachment (stored as JSONB in hub_posts / hub_comments)
+// ---------------------------------------------------------------------------
+export type MediaType = 'image' | 'video' | 'document' | 'link'
+
+export interface MediaAttachment {
+  type: MediaType
+  url: string        // public Blob URL or external URL for links
+  name?: string      // original file name
+  size?: number      // bytes
+  mimeType?: string
+  thumbnail?: string // optional preview image for videos/docs
+}
+
+export interface LinkMeta {
+  title?: string
+  description?: string
+  image?: string
+  domain?: string
+}
+
+// ---------------------------------------------------------------------------
+// Repair Hub — user profile (extends the auth User)
+// ---------------------------------------------------------------------------
+export interface HubProfile {
+  id: string
+  name: string
+  email?: string
+  username: string | null
+  displayName: string | null
+  bio: string | null
+  avatarUrl: string | null
+  location: string | null
+  websiteUrl: string | null
+  repairSpecialty: string[]
+  createdAt: string
+  // aggregate counts
+  postCount: number
+  followerCount: number
+  followingCount: number
+}
+
+// ---------------------------------------------------------------------------
+// Repair Hub — posts (global feed)
+// ---------------------------------------------------------------------------
+export interface HubPost {
+  id: string
+  userId: string
+  manualId: string | null
+  body: string
+  media: MediaAttachment[]
+  linkUrl: string | null
+  linkMeta: LinkMeta | null
+  likeCount: number
+  commentCount: number
+  createdAt: string
+  updatedAt: string
+  // joined
+  author: { id: string; name: string; username: string | null; avatarUrl: string | null }
+  productName?: string | null
+  productBrand?: string | null
+  // viewer state
+  isLiked?: boolean
+  isBookmarked?: boolean
+}
+
+// ---------------------------------------------------------------------------
+// Repair Hub — comments
+// ---------------------------------------------------------------------------
+export interface HubComment {
+  id: string
+  postId: string
+  parentId: string | null
+  userId: string
+  body: string
+  media: MediaAttachment[]
+  likeCount: number
+  createdAt: string
+  updatedAt: string
+  author: { id: string; name: string; username: string | null; avatarUrl: string | null }
+  isLiked?: boolean
+  replies?: HubComment[]
+}
+
+// ---------------------------------------------------------------------------
+// Repair Hub — engagement
+// ---------------------------------------------------------------------------
+export interface HubLike {
+  id: string
+  userId: string
+  targetType: 'post' | 'comment' | 'thread_reply'
+  targetId: string
+  createdAt: string
+}
+
+export interface HubFollow {
+  followerId: string
+  followingId: string
+  createdAt: string
+}
+
+export interface HubBookmark {
+  userId: string
+  postId: string
+  createdAt: string
+}
+
+// ---------------------------------------------------------------------------
 // API response wrappers
 // ---------------------------------------------------------------------------
 export interface ApiSuccess<T> {

@@ -60,11 +60,28 @@
 }
 
 /* ==========================================================================
+   Dark mode overrides
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background:          #0d1117;
+    --color-background-subtle:   #161b22;
+    --color-card:                #161b22;
+    --color-card-hover:          #1c2230;
+    --color-foreground:          #e6edf3;
+    --color-muted-foreground:    #8b949e;
+    --color-border:              #30363d;
+    --color-border-strong:       #484f58;
+    --color-primary-subtle:      rgba(0, 196, 122, 0.1);
+  }
+}
+
+/* ==========================================================================
    Base resets
    ========================================================================== */
 @layer base {
   html {
-    color-scheme: light;
+    color-scheme: light dark;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     background-color: var(--color-background);
