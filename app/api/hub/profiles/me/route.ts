@@ -68,12 +68,26 @@ export async function PATCH(req: NextRequest) {
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return NextResponse.json({ data: null, error: 'Invalid JSON' }, { status: 400 }) }
 
-  const allowed = ['displayName', 'username', 'bio', 'location', 'websiteUrl', 'repairSpecialty'] as const
+  const allowed = [
+    'displayName', 'username', 'bio', 'location', 'websiteUrl', 'repairSpecialty',
+    // personalisation preferences
+    'ageGroup', 'fontSizePref', 'highContrast', 'reducedMotion', 'screenReader', 'colorBlindMode',
+  ] as const
   const setClauses: string[] = []
   const vals: unknown[] = []
   const colMap: Record<string, string> = {
-    displayName: 'display_name', username: 'username', bio: 'bio',
-    location: 'location', websiteUrl: 'website_url', repairSpecialty: 'repair_specialty',
+    displayName:    'display_name',
+    username:       'username',
+    bio:            'bio',
+    location:       'location',
+    websiteUrl:     'website_url',
+    repairSpecialty:'repair_specialty',
+    ageGroup:       'age_group',
+    fontSizePref:   'font_size_pref',
+    highContrast:   'high_contrast',
+    reducedMotion:  'reduced_motion',
+    screenReader:   'screen_reader',
+    colorBlindMode: 'color_blind_mode',
   }
 
   for (const key of allowed) {
