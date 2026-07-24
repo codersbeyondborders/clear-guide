@@ -9,8 +9,8 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
-import type { CompanyRole, TeamMember } from '@/lib/types'
 import { ROLE_PERMISSIONS } from '@/lib/types'
+import type { CompanyRole, TeamMember } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -317,10 +317,11 @@ const INITIAL_TEAM: TeamMember[] = [
 ]
 
 const ROLE_BADGE_STYLES: Record<CompanyRole, { bg: string; color: string }> = {
-  admin: { bg: 'color-mix(in srgb, var(--color-primary) 12%, transparent)', color: 'var(--color-primary)' },
+  owner:   { bg: 'color-mix(in srgb, #a855f7 12%, transparent)', color: '#a855f7' },
+  admin:   { bg: 'color-mix(in srgb, var(--color-primary) 12%, transparent)', color: 'var(--color-primary)' },
   manager: { bg: 'color-mix(in srgb, #3b82f6 12%, transparent)', color: '#3b82f6' },
   creator: { bg: 'color-mix(in srgb, #10b981 12%, transparent)', color: '#10b981' },
-  viewer: { bg: 'var(--color-background-subtle)', color: 'var(--color-muted-foreground)' },
+  viewer:  { bg: 'var(--color-background-subtle)', color: 'var(--color-muted-foreground)' },
 }
 
 function TeamSection() {

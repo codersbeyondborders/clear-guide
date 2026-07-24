@@ -478,6 +478,46 @@ export interface CompanyMember {
   image?: string | null
 }
 
+/** Flat member shape used in the Settings Team UI (mock-data friendly) */
+export interface TeamMember {
+  id: string
+  name: string
+  email: string
+  role: CompanyRole
+  status: MemberStatus
+  joinedAt: string
+  image: string | null
+}
+
+/** Human-readable role metadata used in the Settings UI */
+export const ROLE_PERMISSIONS: Record<CompanyRole, { label: string; description: string; permissions: string[] }> = {
+  owner: {
+    label: 'Owner',
+    description: 'Full access. Owns the company account.',
+    permissions: ['All permissions'],
+  },
+  admin: {
+    label: 'Admin',
+    description: 'Edit company details, invite members, manage roles.',
+    permissions: ['Edit company', 'Invite members', 'Change roles', 'Create manuals', 'Publish', 'Analytics'],
+  },
+  manager: {
+    label: 'Manager',
+    description: 'Invite members and publish manuals.',
+    permissions: ['Invite members', 'Create manuals', 'Publish', 'Analytics'],
+  },
+  creator: {
+    label: 'Creator',
+    description: 'Create and edit manuals, submit for review.',
+    permissions: ['Create manuals', 'Submit for review', 'Analytics'],
+  },
+  viewer: {
+    label: 'Viewer',
+    description: 'Read-only access to manuals and analytics.',
+    permissions: ['View manuals', 'Analytics'],
+  },
+}
+
 export interface CompanyInvitation {
   id: string
   companyId: string
