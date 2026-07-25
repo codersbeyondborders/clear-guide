@@ -89,6 +89,86 @@ export async function GET(
       [id],
     )
 
+    // ── Extended analytics from analytics_events ──────────────────────────
+
+    // Device breakdown
+    const deviceResult = await readQuery(
+      `SELECT COALESCE(device_type, 'unknown') AS device, COUNT(*)::int AS count
+       FROM analytics_events
+       WHERE manual_id = $1
+         AND recorded_at >= NOW() - $2::interval
+       GROUP BY device_type
+       ORDER BY count DESC`,
+      [id, current],
+    )
+
+    // Country breakdown (top 8)
+    const countryResult = await readQuery(
+      `SELECT COALESCE(country, 'Unknown') AS country, COUNT(*)::int AS views
+       FROM analytics_events
+       WHERE manual_id = $1
+         AND recorded_at >= NOW() - $2::interval
+         AND country IS NOT NULL
+       GROUP BY country
+       ORDER BY views DESC
+       LIMIT 8`,
+      [id, current],
+    )
+
+    // Age group breakdown
+    const ageResult = await readQuery(
+      `SELECT COALESCE(user_age_group, 'Unknown') AS "group", COUNT(*)::int AS count
+       FROM analytics_events
+       WHERE manual_id = $1
+         AND recorded_at >= NOW() - $2::interval
+       GROUP BY user_age_group
+       ORDER BY count DESC`,
+      [id, current],
+    )
+
+    // Event type breakdown
+    const eventResult = await readQuery(
+      `SELECT event_type AS type, COUNT(*)::int AS count
+       FROM analytics_events
+       WHERE manual_id = $1
+         AND recorded_at >= NOW() - $2::interval
+       GROUP BY event_type
+       ORDER BY count DESC`,
+      [id, current],
+    )
+
+    // Top sections (by scroll_depth events)
+    const sectionsResult = await readQuery(
+      `SELECT section_id AS title,
+              COUNT(*)::int                          AS views,
+              ROUND(AVG(scroll_depth_pct))::int      AS "avgScrollDepth"
+       FROM analytics_events
+       WHERE manual_id = $1
+         AND section_id IS NOT NULL
+         AND recorded_at >= NOW() - $2::interval
+       GROUP BY section_id
+       ORDER BY views DESC
+       LIMIT 8`,
+      [id, current],
+    )
+
+    // Returning vs new (approximated from repeated session user_ids)
+    const retentionResult = await readQuery(
+      `SELECT
+         COUNT(DISTINCT user_id) FILTER (WHERE session_count > 1)::int AS returning,
+         COUNT(DISTINCT user_id) FILTER (WHERE session_count = 1)::int AS new
+       FROM (
+         SELECT user_id, COUNT(DISTINCT session_id) AS session_count
+         FROM analytics_events
+         WHERE manual_id = $1 AND user_id IS NOT NULL
+           AND recorded_at >= NOW() - $2::interval
+         GROUP BY user_id
+       ) t`,
+      [id, current],
+    )
+
+    const retRow = retentionResult.rows[0] ?? { returning: 0, new: 0 }
+
     return NextResponse.json({
       manualName,
       totalViews: kpi.total_views,
@@ -98,6 +178,13 @@ export async function GET(
       trendUsers,
       viewsOverTime: viewsResult.rows,
       topAIQueries: queriesResult.rows,
+      // extended
+      deviceBreakdown: deviceResult.rows,
+      countryBreakdown: countryResult.rows,
+      ageGroupBreakdown: ageResult.rows,
+      eventBreakdown: eventResult.rows,
+      topSections: sectionsResult.rows,
+      returningVsNew: { returning: retRow.returning, new: retRow.new },
     })
   } catch (err) {
     console.error('[analytics] GET /api/manuals/[id]/analytics error:', err)

@@ -7,7 +7,7 @@ import { AIProcessingOverlay } from '@/components/AIProcessingOverlay'
 import { FileText, Globe, Upload, LayoutList, Eye, Lock, FileDown, QrCode, BookOpen, Printer, ClipboardCheck, Send, Rocket } from 'lucide-react'
 import type { OutputFormat } from '@/lib/types'
 
-const OUTPUT_FORMAT_OPTIONS: { value: OutputFormat; Icon: React.FC<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>; title: string; desc: string }[] = [
+const OUTPUT_FORMAT_OPTIONS: { value: OutputFormat; Icon: React.FC<{ className?: string; style?: React.CSSProperties; 'aria-hidden'?: boolean | 'true' | 'false' }>; title: string; desc: string }[] = [
   { value: 'web',         Icon: Globe,    title: 'Web (Interactive)',   desc: 'Responsive viewer with AI chat and search. Always included.' },
   { value: 'pdf',         Icon: FileDown, title: 'PDF Download',        desc: 'AI-generated PDF attached to the manual page.' },
   { value: 'qr_page',     Icon: QrCode,   title: 'QR Landing Page',     desc: 'Branded mobile-optimised page for QR code scans.' },

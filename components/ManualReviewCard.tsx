@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   Check, ChevronDown, ChevronUp, ClipboardCheck, AlertTriangle,
-  Globe, FileText, Image as ImageIcon, Video, QrCode, Layers, Loader2,
+  Globe, FileText, QrCode, BookOpen, Printer, Loader2,
 } from 'lucide-react'
 import type { OutputFormat } from '@/lib/types'
 

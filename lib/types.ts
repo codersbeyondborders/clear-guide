@@ -36,14 +36,15 @@ export interface Session {
 // ---------------------------------------------------------------------------
 // Company & Team Management
 // ---------------------------------------------------------------------------
-export type CompanyRole = 'admin' | 'manager' | 'creator' | 'viewer'
+export type CompanyRole = 'owner' | 'admin' | 'manager' | 'creator' | 'viewer'
+export type MemberStatus = 'pending' | 'active' | 'suspended'
 
 export interface TeamMember {
   id: string
   name: string
   email: string
   role: CompanyRole
-  status: 'active' | 'pending'
+  status: MemberStatus
   joinedAt: string
   image: string | null
 }
@@ -58,32 +59,37 @@ export interface CompanyProfile {
 
 // Role permission matrix
 export const ROLE_PERMISSIONS: Record<CompanyRole, { label: string; description: string; permissions: string[] }> = {
+  owner: {
+    label: 'Owner',
+    description: 'Full access. Owns the company account.',
+    permissions: ['All permissions'],
+  },
   admin: {
     label: 'Admin',
-    description: 'Full access',
-    permissions: ['Create', 'Edit', 'Delete', 'Publish', 'Manage Team', 'View Analytics'],
+    description: 'Edit company details, invite members, manage roles.',
+    permissions: ['Edit company', 'Invite members', 'Change roles', 'Create manuals', 'Publish', 'Analytics'],
   },
   manager: {
     label: 'Manager',
-    description: 'Create, edit & publish',
-    permissions: ['Create', 'Edit', 'Publish', 'View Analytics'],
+    description: 'Invite members and publish manuals.',
+    permissions: ['Invite members', 'Create manuals', 'Publish', 'Analytics'],
   },
   creator: {
     label: 'Creator',
-    description: 'Create & edit drafts',
-    permissions: ['Create', 'Edit'],
+    description: 'Create and edit manuals, submit for review.',
+    permissions: ['Create manuals', 'Submit for review', 'Analytics'],
   },
   viewer: {
     label: 'Viewer',
-    description: 'Read-only access',
-    permissions: ['View Analytics'],
+    description: 'Read-only access to manuals and analytics.',
+    permissions: ['View manuals', 'Analytics'],
   },
 }
 
 // ---------------------------------------------------------------------------
 // Output Formats
 // ---------------------------------------------------------------------------
-export type OutputFormat = 'web' | 'pdf' | 'infographic' | 'video_script' | 'qr_code' | 'ar_overlay'
+export type OutputFormat = 'web' | 'pdf' | 'qr_page' | 'epub' | 'print_ready'
 
 // ---------------------------------------------------------------------------
 // App: manuals
@@ -447,11 +453,8 @@ export interface HubBookmark {
 }
 
 // ---------------------------------------------------------------------------
-// Company accounts + multi-user roles
+// Company accounts + multi-user roles (extended interfaces)
 // ---------------------------------------------------------------------------
-export type CompanyRole = 'owner' | 'admin' | 'manager' | 'creator' | 'viewer'
-export type MemberStatus = 'pending' | 'active' | 'suspended'
-
 export interface Company {
   id: string
   ownerUserId: string
@@ -478,46 +481,6 @@ export interface CompanyMember {
   image?: string | null
 }
 
-/** Flat member shape used in the Settings Team UI (mock-data friendly) */
-export interface TeamMember {
-  id: string
-  name: string
-  email: string
-  role: CompanyRole
-  status: MemberStatus
-  joinedAt: string
-  image: string | null
-}
-
-/** Human-readable role metadata used in the Settings UI */
-export const ROLE_PERMISSIONS: Record<CompanyRole, { label: string; description: string; permissions: string[] }> = {
-  owner: {
-    label: 'Owner',
-    description: 'Full access. Owns the company account.',
-    permissions: ['All permissions'],
-  },
-  admin: {
-    label: 'Admin',
-    description: 'Edit company details, invite members, manage roles.',
-    permissions: ['Edit company', 'Invite members', 'Change roles', 'Create manuals', 'Publish', 'Analytics'],
-  },
-  manager: {
-    label: 'Manager',
-    description: 'Invite members and publish manuals.',
-    permissions: ['Invite members', 'Create manuals', 'Publish', 'Analytics'],
-  },
-  creator: {
-    label: 'Creator',
-    description: 'Create and edit manuals, submit for review.',
-    permissions: ['Create manuals', 'Submit for review', 'Analytics'],
-  },
-  viewer: {
-    label: 'Viewer',
-    description: 'Read-only access to manuals and analytics.',
-    permissions: ['View manuals', 'Analytics'],
-  },
-}
-
 export interface CompanyInvitation {
   id: string
   companyId: string
@@ -528,16 +491,6 @@ export interface CompanyInvitation {
   expiresAt: string
   acceptedAt: string | null
 }
-
-// ---------------------------------------------------------------------------
-// Output formats
-// ---------------------------------------------------------------------------
-export type OutputFormat = 'web' | 'pdf' | 'qr_page' | 'epub' | 'print_ready'
-
-// ---------------------------------------------------------------------------
-// Extended manual (with company + review fields)
-// ---------------------------------------------------------------------------
-export type ExtendedManualStatus = 'draft' | 'processing' | 'review' | 'published' | 'archived'
 
 // ---------------------------------------------------------------------------
 // Extended analytics
