@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Settings, BarChart2, Trash2, Share2, Check, Eye, Clock } from 'lucide-react'
+import { FileText, Settings, BarChart2, Trash2, Share2, Check, Eye, Clock, ClipboardCheck } from 'lucide-react'
 import Image from 'next/image'
 import type { ManualListItem } from '@/lib/types'
 
@@ -347,6 +347,23 @@ export function ManualCard({ manual, onDelete, listMode = false }: ManualCardPro
             <BarChart2 className="w-3.5 h-3.5" aria-hidden="true" />
             Stats
           </button>
+
+          {/* Review action — shown only when pending_review */}
+          {manual.status === 'pending_review' && (
+            <button
+              onClick={() => router.push(`/manufacturer/review/${manual.id}`)}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 px-3 rounded-full border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              style={{
+                borderColor: '#d97706',
+                color: '#d97706',
+                backgroundColor: 'color-mix(in srgb, #f59e0b 10%, transparent)',
+              }}
+              aria-label={`Review ${manual.productName}`}
+            >
+              <ClipboardCheck className="w-3.5 h-3.5" aria-hidden="true" />
+              Review
+            </button>
+          )}
 
           {/* Share / copy link */}
           <button

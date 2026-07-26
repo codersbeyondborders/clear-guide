@@ -1,16 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Share2, Download, Globe, FileText, Image as ImageIcon, Video, QrCode, Layers } from 'lucide-react'
+import { Check, Share2, Download, Globe, FileText, QrCode, BookOpen, Printer } from 'lucide-react'
 import type { OutputFormat } from '@/lib/types'
 
 const FORMAT_META: Record<OutputFormat, { label: string; icon: typeof Globe }> = {
-  web:          { label: 'Web',         icon: Globe      },
-  pdf:          { label: 'PDF',         icon: FileText   },
-  infographic:  { label: 'Infographic', icon: ImageIcon  },
-  video_script: { label: 'Video Script',icon: Video      },
-  qr_code:      { label: 'QR Code',     icon: QrCode     },
-  ar_overlay:   { label: 'AR Overlay',  icon: Layers     },
+  web:         { label: 'Web',            icon: Globe    },
+  pdf:         { label: 'PDF',            icon: FileText },
+  qr_page:     { label: 'QR Page',        icon: QrCode   },
+  epub:        { label: 'ePub',           icon: BookOpen },
+  print_ready: { label: 'Print-Ready PDF',icon: Printer  },
 }
 
 // Static QR SVG pattern (visual stand-in for a real QR code)

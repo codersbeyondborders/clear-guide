@@ -4,15 +4,36 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useEditor } from '@/context/ManualEditorContext'
 import { AIProcessingOverlay } from '@/components/AIProcessingOverlay'
-import { FileText, Globe, Upload, LayoutList, Eye, Lock } from 'lucide-react'
+import { FileText, Globe, Upload, LayoutList, Eye, Lock, FileDown, QrCode, BookOpen, Printer, ClipboardCheck, Send, Rocket } from 'lucide-react'
+import type { OutputFormat } from '@/lib/types'
+
+const OUTPUT_FORMAT_OPTIONS: { value: OutputFormat; Icon: React.FC<{ className?: string; style?: React.CSSProperties; 'aria-hidden'?: boolean | 'true' | 'false' }>; title: string; desc: string }[] = [
+  { value: 'web',         Icon: Globe,    title: 'Web (Interactive)',   desc: 'Responsive viewer with AI chat and search. Always included.' },
+  { value: 'pdf',         Icon: FileDown, title: 'PDF Download',        desc: 'AI-generated PDF attached to the manual page.' },
+  { value: 'qr_page',     Icon: QrCode,   title: 'QR Landing Page',     desc: 'Branded mobile-optimised page for QR code scans.' },
+  { value: 'epub',        Icon: BookOpen, title: 'ePub / E-reader',      desc: 'Portable format for Kindle and iBooks.' },
+  { value: 'print_ready', Icon: Printer,  title: 'Print-Ready PDF',     desc: 'High-res PDF with bleeds for professional printing.' },
+]
 
 export function Step4({ isEdit = false }: { isEdit?: boolean }) {
   const { formData, manualId, setStep } = useEditor()
   const router = useRouter()
-  const [status, setStatus] = useState<'draft' | 'published'>(formData.status)
+  const [status, setStatus] = useState<'draft' | 'pending_review' | 'published'>(
+    (formData.status as 'draft' | 'pending_review' | 'published') ?? 'draft',
+  )
   const [isPublic, setIsPublic] = useState<boolean>(formData.isPublic)
+  const [outputFormats, setOutputFormats] = useState<OutputFormat[]>(
+    (formData as { outputFormats?: OutputFormat[] }).outputFormats ?? ['web'],
+  )
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
+
+  function toggleFormat(fmt: OutputFormat) {
+    if (fmt === 'web') return // web is always required
+    setOutputFormats((prev) =>
+      prev.includes(fmt) ? prev.filter((f) => f !== fmt) : [...prev, fmt],
+    )
+  }
 
   const handleSave = async () => {
     setError('')
@@ -26,6 +47,7 @@ export function Step4({ isEdit = false }: { isEdit?: boolean }) {
         languages: formData.languages,
         status,
         isPublic,
+        outputFormats,
         uploadMethod: formData.uploadMethod,
         originalFileUrl: formData.uploadedFilePathname ?? null,
         sections: formData.sections,
@@ -128,20 +150,118 @@ export function Step4({ isEdit = false }: { isEdit?: boolean }) {
           </div>
         </div>
 
-        {/* Status selector */}
-        <div className="mt-6 space-y-2">
-          <label htmlFor="status-select" className="block text-sm font-medium" style={{ color: 'var(--color-foreground)' }}>
-            Status
-          </label>
-          <select
-            id="status-select"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as 'draft' | 'published')}
-            className="auth-input max-w-xs"
-          >
-            <option value="draft">Draft — not publicly visible</option>
-            <option value="published">Published — live for end users</option>
-          </select>
+        {/* Output formats */}
+        <fieldset className="mt-6 space-y-3">
+          <legend className="text-sm font-medium" style={{ color: 'var(--color-foreground)' }}>
+            Output formats
+          </legend>
+          <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
+            Choose how this manual will be delivered. Web is always included.
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {OUTPUT_FORMAT_OPTIONS.map(({ value, Icon, title, desc }) => {
+              const selected = outputFormats.includes(value)
+              const locked = value === 'web'
+              return (
+                <label
+                  key={value}
+                  className="flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring"
+                  style={{
+                    borderColor: selected ? 'var(--color-primary)' : 'var(--color-border)',
+                    backgroundColor: selected ? 'var(--color-primary-subtle)' : 'var(--color-card)',
+                    opacity: locked ? 0.8 : 1,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={selected}
+                    onChange={() => toggleFormat(value)}
+                    disabled={locked}
+                    aria-label={title}
+                  />
+                  <Icon
+                    className="w-4 h-4 shrink-0 mt-0.5"
+                    style={{ color: selected ? 'var(--color-primary)' : 'var(--color-muted-foreground)' }}
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold leading-tight" style={{ color: 'var(--color-foreground)' }}>
+                      {title}
+                      {locked && (
+                        <span className="ml-1.5 text-[10px] font-normal px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}>
+                          Required
+                        </span>
+                      )}
+                    </span>
+                    <span className="block text-xs mt-0.5 leading-relaxed text-pretty" style={{ color: 'var(--color-muted-foreground)' }}>
+                      {desc}
+                    </span>
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+        </fieldset>
+
+        {/* Save mode */}
+        <div className="mt-6 space-y-3">
+          <p className="text-sm font-medium" style={{ color: 'var(--color-foreground)' }}>Save as</p>
+          <div className="grid sm:grid-cols-3 gap-3">
+            {([
+              {
+                value: 'draft' as const,
+                Icon: ClipboardCheck,
+                title: 'Save as Draft',
+                desc: 'Not visible publicly. Continue editing any time.',
+              },
+              {
+                value: 'pending_review' as const,
+                Icon: Send,
+                title: 'Submit for Review',
+                desc: 'Send to your team for approval before it goes live.',
+              },
+              {
+                value: 'published' as const,
+                Icon: Rocket,
+                title: 'Publish Now',
+                desc: 'Make it immediately live for end users.',
+              },
+            ] as const).map(({ value, Icon, title, desc }) => {
+              const selected = status === value
+              return (
+                <label
+                  key={value}
+                  className="flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring"
+                  style={{
+                    borderColor: selected ? 'var(--color-primary)' : 'var(--color-border)',
+                    backgroundColor: selected ? 'var(--color-primary-subtle)' : 'var(--color-card)',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="save-mode"
+                    className="sr-only"
+                    checked={selected}
+                    onChange={() => setStatus(value)}
+                  />
+                  <Icon
+                    className="w-4 h-4 shrink-0 mt-0.5"
+                    style={{ color: selected ? 'var(--color-primary)' : 'var(--color-muted-foreground)' }}
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                      {title}
+                    </span>
+                    <span className="block text-xs mt-0.5 leading-relaxed text-pretty" style={{ color: 'var(--color-muted-foreground)' }}>
+                      {desc}
+                    </span>
+                  </span>
+                </label>
+              )
+            })}
+          </div>
         </div>
 
         {/* Visibility (public/private) */}
@@ -240,7 +360,13 @@ export function Step4({ isEdit = false }: { isEdit?: boolean }) {
               className="btn-primary"
             >
               <FileText className="w-4 h-4" aria-hidden="true" />
-              {processing ? 'Saving…' : isEdit ? 'Update Manual' : 'Save Manual'}
+              {processing
+                ? 'Saving…'
+                : status === 'pending_review'
+                  ? 'Submit for Review'
+                  : status === 'published'
+                    ? (isEdit ? 'Update & Publish' : 'Publish Now')
+                    : (isEdit ? 'Update Draft' : 'Save Draft')}
             </button>
           </div>
         </div>

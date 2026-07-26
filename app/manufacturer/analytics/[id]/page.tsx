@@ -1,7 +1,7 @@
 'use client'
 
 import { use, useState } from 'react'
-import { ArrowLeft, Eye, Users, Clock, Download, Globe, Smartphone, Monitor, Tablet, MousePointer, MessageSquare, TrendingDown } from 'lucide-react'
+import { ArrowLeft, Eye, Users, Clock, Download, Globe, Smartphone, Monitor, Tablet, MousePointer, MessageSquare, TrendingDown, UserCheck } from 'lucide-react'
 import useSWR from 'swr'
 import dynamic from 'next/dynamic'
 import { KPICard } from '@/components/KPICard'
@@ -54,17 +54,28 @@ function formatSecondsShort(s: number): string {
 // ---------------------------------------------------------------------------
 // User Behaviour section
 // ---------------------------------------------------------------------------
-function UserBehaviourSection() {
+interface UserBehaviourProps {
+  returningVsNew?: { returning: number; new: number }
+  totalViews?: number
+  activeUsers?: number
+}
+
+function UserBehaviourSection({ returningVsNew, totalViews = 0, activeUsers = 0 }: UserBehaviourProps) {
   const { engagementFunnel, bounceRate, returningUserRate, viewsByMode } = MOCK_DETAILED
 
+  // Override returning/new from live data when available
+  const returning = returningVsNew?.returning ?? Math.round(totalViews * (returningUserRate / 100))
+  const newUsers  = returningVsNew?.new      ?? (activeUsers - returning)
+  const totalKnown = returning + newUsers
+
   const funnelSteps = [
-    { label: 'Sessions', value: engagementFunnel.sessions, icon: Eye },
-    { label: 'Scrolled 50%+', value: engagementFunnel.scrolled50, icon: MousePointer },
+    { label: 'Sessions', value: totalViews || engagementFunnel.sessions, icon: Eye },
+    { label: 'Returning Users', value: returning, icon: UserCheck },
     { label: 'Used AI Chat', value: engagementFunnel.usedAiChat, icon: MessageSquare },
     { label: 'Downloaded', value: engagementFunnel.downloaded, icon: Download },
   ]
 
-  const totalViews = Object.values(viewsByMode).reduce((a, b) => a + b, 0)
+  const mapTotalViews = Object.values(viewsByMode).reduce((a, b) => a + b, 0)
   const modeLabels: Record<string, string> = { web: 'Web Viewer', ar: 'AR Overlay', qr: 'QR Scan', direct: 'Direct Link' }
 
   return (
@@ -117,8 +128,10 @@ function UserBehaviourSection() {
               <p className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>{bounceRate}%</p>
             </div>
             <div>
-              <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Returning Users</p>
-              <p className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>{returningUserRate}%</p>
+              <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Returning</p>
+              <p className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>
+                {totalKnown > 0 ? `${Math.round((returning / totalKnown) * 100)}%` : `${returningUserRate}%`}
+              </p>
             </div>
           </div>
         </div>
@@ -131,7 +144,7 @@ function UserBehaviourSection() {
           <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>Access Mode Breakdown</p>
           <div className="space-y-3">
             {(Object.entries(viewsByMode) as [string, number][]).map(([mode, count]) => {
-              const pct = Math.round((count / totalViews) * 100)
+              const pct = Math.round((count / mapTotalViews) * 100)
               return (
                 <div key={mode} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
@@ -154,9 +167,23 @@ function UserBehaviourSection() {
 // ---------------------------------------------------------------------------
 // Demographics section
 // ---------------------------------------------------------------------------
-function DemographicsSection() {
+interface DemographicsProps {
+  countryData?: { country: string; views: number }[]
+}
+
+function DemographicsSection({ countryData }: DemographicsProps) {
   const { topCountries, deviceStats, topLanguages } = MOCK_DETAILED
   const deviceTotal = deviceStats.mobile + deviceStats.desktop + deviceStats.tablet
+
+  // Use live country data when available, fall back to mock
+  const countries = (countryData && countryData.length > 0)
+    ? countryData.map((c, i) => ({
+        country: c.country,
+        flag: '',
+        views: c.views,
+        percentage: i === 0 ? 100 : Math.round((c.views / countryData[0].views) * 100),
+      }))
+    : topCountries
 
   return (
     <section aria-labelledby="demographics-heading" className="space-y-4">
@@ -171,7 +198,7 @@ function DemographicsSection() {
         >
           <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>Top Countries</p>
           <div className="space-y-2.5" role="list" aria-label="Top countries by views">
-            {topCountries.map((c) => (
+            {countries.map((c) => (
               <div key={c.country} role="listitem" className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5" style={{ color: 'var(--color-foreground)' }}>
@@ -256,8 +283,23 @@ function DemographicsSection() {
 // ---------------------------------------------------------------------------
 // Section Engagement table
 // ---------------------------------------------------------------------------
-function SectionEngagementSection() {
-  const { sectionEngagement } = MOCK_DETAILED
+interface SectionEngagementProps {
+  sectionData?: { title: string; views: number; avgScrollDepth: number }[]
+}
+
+function SectionEngagementSection({ sectionData }: SectionEngagementProps) {
+  const { sectionEngagement: mockSections } = MOCK_DETAILED
+
+  // Build unified shape from live data or mock
+  const sectionEngagement = (sectionData && sectionData.length > 0)
+    ? sectionData.map((s, i) => ({
+        sectionNumber: i + 1,
+        title: s.title,
+        views: s.views,
+        avgTimeSeconds: 0,
+        dropoffRate: Math.max(0, 100 - s.avgScrollDepth),
+      }))
+    : mockSections
 
   function dropoffColor(rate: number): string {
     if (rate < 20) return '#16a34a'
@@ -375,6 +417,22 @@ const TopQueriesBarChart = dynamic(
   () => import('@/components/AnalyticsCharts').then(m => m.TopQueriesBarChart),
   { ssr: false, loading: () => <ChartSkeleton height={200} /> },
 )
+const DevicePieChart = dynamic(
+  () => import('@/components/AnalyticsCharts').then(m => m.DevicePieChart),
+  { ssr: false, loading: () => <ChartSkeleton height={200} /> },
+)
+const AgeGroupBarChart = dynamic(
+  () => import('@/components/AnalyticsCharts').then(m => m.AgeGroupBarChart),
+  { ssr: false, loading: () => <ChartSkeleton height={160} /> },
+)
+const CountryBarChart = dynamic(
+  () => import('@/components/AnalyticsCharts').then(m => m.CountryBarChart),
+  { ssr: false, loading: () => <ChartSkeleton height={200} /> },
+)
+const EventBarChart = dynamic(
+  () => import('@/components/AnalyticsCharts').then(m => m.EventBarChart),
+  { ssr: false, loading: () => <ChartSkeleton height={180} /> },
+)
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -387,6 +445,13 @@ interface AnalyticsData {
   trendUsers: number
   viewsOverTime: { date: string; views: number }[]
   topAIQueries: { query: string; count: number }[]
+  // extended
+  deviceBreakdown: { device: string; count: number }[]
+  countryBreakdown: { country: string; views: number }[]
+  ageGroupBreakdown: { group: string; count: number }[]
+  eventBreakdown: { type: string; count: number }[]
+  topSections: { title: string; views: number; avgScrollDepth: number }[]
+  returningVsNew: { returning: number; new: number }
 }
 
 function ChartSkeleton({ height = 220 }: { height?: number }) {
@@ -575,9 +640,9 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
         {/* ── KPI cards ────────────────────────────────────────────────── */}
         <section aria-labelledby="kpi-heading">
           <h2 id="kpi-heading" className="sr-only">Key performance indicators</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {isLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
+              Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
                   className="rounded-2xl border p-6 animate-pulse h-28"
@@ -609,6 +674,17 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
                   icon={Clock}
                   iconBg="color-mix(in srgb, #a855f7 15%, transparent)"
                   iconColor="#9333ea"
+                />
+                <KPICard
+                  label="Returning Users"
+                  value={
+                    data.returningVsNew
+                      ? `${data.returningVsNew.returning.toLocaleString()}`
+                      : 'N/A'
+                  }
+                  icon={UserCheck}
+                  iconBg="color-mix(in srgb, #d97706 15%, transparent)"
+                  iconColor="#d97706"
                 />
               </>
             ) : null}
@@ -664,7 +740,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
           </section>
         </div>
 
-        {/* ── AI query summary table ───────────────────────────────────── */}
+        {/* ── AI query summary table ──────────────���────────────────────── */}
         {!isLoading && (data?.topAIQueries?.length ?? 0) > 0 && (
           <section aria-labelledby="query-table-heading">
             <div
@@ -721,13 +797,87 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
           </section>
         )}
         {/* ── User Behaviour ───────────────────────────────────────── */}
-        <UserBehaviourSection />
+        <UserBehaviourSection
+          returningVsNew={data?.returningVsNew}
+          totalViews={data?.totalViews}
+          activeUsers={data?.activeUsers}
+        />
 
-        {/* ── Demographics ─────────────────────────────────────────── */}
-        <DemographicsSection />
+        {/* ── Device + Age demography ──────────────────────────────── */}
+        <section aria-labelledby="device-age-heading" className="space-y-4">
+          <h2 id="device-age-heading" className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>
+            Device & Age
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div
+              className="rounded-2xl border p-5"
+              style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+            >
+              <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-foreground)' }}>Device Breakdown</p>
+              {isLoading ? (
+                <ChartSkeleton height={200} />
+              ) : (data?.deviceBreakdown?.length ?? 0) > 0 ? (
+                <DevicePieChart data={data!.deviceBreakdown} />
+              ) : (
+                <p className="text-sm py-8 text-center" style={{ color: 'var(--color-muted-foreground)' }}>No device data yet.</p>
+              )}
+            </div>
+            <div
+              className="rounded-2xl border p-5"
+              style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+            >
+              <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-foreground)' }}>Age Group Breakdown</p>
+              {isLoading ? (
+                <ChartSkeleton height={160} />
+              ) : (data?.ageGroupBreakdown?.length ?? 0) > 0 ? (
+                <AgeGroupBarChart data={data!.ageGroupBreakdown} />
+              ) : (
+                <p className="text-sm py-8 text-center" style={{ color: 'var(--color-muted-foreground)' }}>No age data yet. Collected after users sign up with age group.</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Demographics (countries + languages) ─────────────────── */}
+        <DemographicsSection countryData={data?.countryBreakdown} />
+
+        {/* ── Country chart + Event breakdown ──────────────────────── */}
+        <section aria-labelledby="geo-events-heading" className="space-y-4">
+          <h2 id="geo-events-heading" className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>
+            Geography & Events
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div
+              className="rounded-2xl border p-5"
+              style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+            >
+              <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-foreground)' }}>Views by Country</p>
+              {isLoading ? (
+                <ChartSkeleton height={200} />
+              ) : (data?.countryBreakdown?.length ?? 0) > 0 ? (
+                <CountryBarChart data={data!.countryBreakdown} />
+              ) : (
+                <p className="text-sm py-8 text-center" style={{ color: 'var(--color-muted-foreground)' }}>No country data yet.</p>
+              )}
+            </div>
+            <div
+              className="rounded-2xl border p-5"
+              style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+            >
+              <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-foreground)' }}>Event Breakdown</p>
+              {isLoading ? (
+                <ChartSkeleton height={180} />
+              ) : (data?.eventBreakdown?.length ?? 0) > 0 ? (
+                <EventBarChart data={data!.eventBreakdown} />
+              ) : (
+                <p className="text-sm py-8 text-center" style={{ color: 'var(--color-muted-foreground)' }}>No event data yet.</p>
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* ── Section Engagement ───────────────────────────────────── */}
-        <SectionEngagementSection />
+        <SectionEngagementSection sectionData={data?.topSections} />
       </main>
     </div>
   )
